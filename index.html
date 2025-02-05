@@ -11,11 +11,23 @@
             margin: 0;
             overflow: hidden;
             background-color: black;
+            color: white;
+            font-family: Arial, sans-serif;
+        }
+        #camera-info {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 10px;
+            border-radius: 5px;
         }
     </style>
 </head>
 <body>
-    <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;" id="scene">
+    <div id="camera-info">Buscando câmeras...</div>
+
+    <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;">
         <a-marker preset="hiro">
             <a-entity 
                 gltf-model="modelos/survival_character.glb"
@@ -30,55 +42,74 @@
     <script>
         async function selectPrimaryOrTeleCamera() {
             try {
+                const cameraInfoDiv = document.getElementById("camera-info");
+
                 if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) {
-                    console.error("Este navegador não suporta acesso à câmera.");
+                    cameraInfoDiv.innerText = "Este navegador não suporta acesso à câmera.";
+                    alert("Erro: Este navegador não suporta acesso à câmera.");
                     return;
                 }
 
                 const devices = await navigator.mediaDevices.enumerateDevices();
                 const videoDevices = devices.filter(device => device.kind === 'videoinput');
 
-                // Filtra apenas câmeras traseiras
+                if (videoDevices.length === 0) {
+                    cameraInfoDiv.innerText = "Nenhuma câmera encontrada.";
+                    alert("Erro: Nenhuma câmera encontrada.");
+                    return;
+                }
+
+                // Lista todas as câmeras traseiras
                 const rearCameras = videoDevices.filter(device =>
                     device.label.toLowerCase().includes('back') ||
                     device.label.toLowerCase().includes('rear') ||
                     device.label.toLowerCase().includes('environment')
                 );
 
-                if (rearCameras.length > 0) {
-                    let selectedCamera = null;
+                let message = "Câmeras encontradas:\n";
+                videoDevices.forEach((device, index) => {
+                    message += `${index + 1}. ${device.label}\n`;
+                });
 
-                    // 1. Prioriza câmera que contenha "main" ou "tele"
+                if (rearCameras.length === 0) {
+                    cameraInfoDiv.innerText = "Nenhuma câmera traseira encontrada.";
+                    alert(message + "\nNenhuma câmera traseira encontrada.");
+                    return;
+                }
+
+                let selectedCamera = null;
+
+                // 1. Prioriza câmera que contenha "main" ou "tele"
+                selectedCamera = rearCameras.find(camera =>
+                    camera.label.toLowerCase().includes('main') ||
+                    camera.label.toLowerCase().includes('tele')
+                );
+
+                // 2. Se não encontrar, pega a primeira câmera traseira disponível
+                if (!selectedCamera) {
                     selectedCamera = rearCameras.find(camera =>
-                        camera.label.toLowerCase().includes('main') ||
-                        camera.label.toLowerCase().includes('tele')
-                    );
+                        !camera.label.toLowerCase().includes('wide') // Evita câmeras ultrawide
+                    ) || rearCameras[0];
+                }
 
-                    // 2. Se não encontrar, pega a primeira câmera traseira disponível
-                    if (!selectedCamera) {
-                        selectedCamera = rearCameras.find(camera =>
-                            !camera.label.toLowerCase().includes('wide') // Evita câmeras ultrawide
-                        ) || rearCameras[0];
-                    }
+                message += `\nCâmera selecionada: ${selectedCamera.label}`;
+                cameraInfoDiv.innerText = message;
+                alert(message);
 
-                    console.log("Usando câmera:", selectedCamera.label, selectedCamera.deviceId);
+                // Obtém o stream da câmera correta
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: { deviceId: { exact: selectedCamera.deviceId } }
+                });
 
-                    // Obtém o stream da câmera correta
-                    const stream = await navigator.mediaDevices.getUserMedia({
-                        video: { deviceId: { exact: selectedCamera.deviceId } }
-                    });
-
-                    // Define o stream correto no AR.js
-                    const videoElement = document.querySelector('video');
-                    if (videoElement) {
-                        videoElement.srcObject = stream;
-                        videoElement.play().catch(console.error);
-                    }
-                } else {
-                    console.warn('Nenhuma câmera traseira encontrada. Mantendo padrão.');
+                // Define o stream correto no AR.js
+                const videoElement = document.querySelector('video');
+                if (videoElement) {
+                    videoElement.srcObject = stream;
+                    videoElement.play().catch(console.error);
                 }
             } catch (error) {
                 console.error('Erro ao selecionar a câmera principal ou teleobjetiva:', error);
+                alert("Erro ao selecionar a câmera: " + error.message);
             }
         }
 
@@ -86,4 +117,3 @@
     </script>
 </body>
 </html>
-
