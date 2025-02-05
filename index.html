@@ -9,13 +9,15 @@
 </head>
 <body style="margin: 0;">
   <canvas id="xr-canvas"></canvas>
+  <button id="start-xr">Iniciar WebXR</button>
+  <div id="error-message" style="color: red;"></div>
+
   <script>
     const canvas = document.getElementById('xr-canvas');
     const renderer = new THREE.WebGLRenderer({ canvas: canvas });
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
 
-    // Adiciona um cubo à cena
     const geometry = new THREE.BoxGeometry();
     const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
     const cube = new THREE.Mesh(geometry, material);
@@ -23,38 +25,27 @@
 
     camera.position.z = 5;
 
-
     async function startXRSession() {
-        if (navigator.xr) {
-           try{
-              const xrSession = await navigator.xr.requestSession('immersive-ar', {
-                 requiredFeatures: ['hit-test'] // adicione recursos conforme necessário
-              });
-              renderer.xr.enabled = true;
-              renderer.xr.setReferenceSpaceType('local');
-              renderer.xr.setSession(xrSession);
+      try {
+        const xrSession = await navigator.xr.requestSession('immersive-ar', {
+          requiredFeatures: ['hit-test']
+        });
+        renderer.xr.enabled = true;
+        renderer.xr.setReferenceSpaceType('local');
+        renderer.xr.setSession(xrSession);
 
-              // função animate para renderizar a cena
-              renderer.setAnimationLoop(() => {
-                renderer.render(scene, camera);
-                cube.rotation.x += 0.01;
-                cube.rotation.y += 0.01;
-              });
-
-           } catch(error){
-               console.error("Erro ao iniciar sessão XR:", error);
-              alert("Erro ao iniciar sessão WebXR: " + error.message);
-           }
-
-         } else{
-          console.error("WebXR não suportado neste navegador.");
-          alert("WebXR não é suportado neste navegador/dispositivo.");
-       }
-
+        renderer.setAnimationLoop(() => {
+          renderer.render(scene, camera);
+          cube.rotation.x += 0.01;
+          cube.rotation.y += 0.01;
+        });
+      } catch (error) {
+        console.error("Erro ao iniciar sessão XR:", error);
+        document.getElementById("error-message").innerHTML = "Erro ao iniciar WebXR: " + error.message;
+      }
     }
 
-     startXRSession();
-
+    document.getElementById('start-xr').addEventListener('click', startXRSession);
   </script>
 </body>
 </html>
