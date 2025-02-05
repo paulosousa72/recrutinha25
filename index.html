@@ -23,35 +23,42 @@
 <body>
   <a-scene embedded arjs>
     <a-asset-item id="modelo3d" src="seu_modelo_3d.glb"></a-asset-item>
-
-    <a-marker preset='hiro'> <!-- Substitua "hiro" pelo seu padrão de marcador -->
+    <a-marker preset='hiro'>
       <a-entity gltf-model="#modelo3d" scale="0.1 0.1 0.1" animation-mixer></a-entity>
     </a-marker>
     <a-entity camera></a-entity>
   </a-scene>
 
   <script>
+    // Aguarda o AR.js estar pronto antes de acessar a câmera
     window.addEventListener('arjs-loaded', () => {
       navigator.mediaDevices.enumerateDevices()
         .then(devices => {
           const cameras = devices.filter(device => device.kind === 'videoinput');
+
           if (cameras.length > 0) {
-            const rearCamera = cameras.find(camera => camera.label.toLowerCase().includes('back') || camera.label.toLowerCase().includes('traseira')) || cameras[cameras.length - 1];
+            const rearCamera = cameras.find(camera => camera.label.toLowerCase().includes('back') || camera.label.toLowerCase().includes('traseira') || camera.label.toLowerCase().includes('environment')) || cameras[cameras.length - 1];
 
-            if (rearCamera) {
+             if (rearCamera) {
               const constraints = { video: { deviceId: { exact: rearCamera.deviceId } } };
-              const video = document.querySelector('video');
 
-              navigator.mediaDevices.getUserMedia(constraints)
-                .then(stream => {
-                  video.srcObject = stream;
-                })
-                .catch(error => {
-                  console.error('Erro ao acessar a câmera com deviceId:', error);
-                });
-            } else {
-              console.error("Nenhuma câmera traseira encontrada.");
-            }
+              // Agora acessamos o vídeo dentro do contexto do AR.js
+              let sceneEl = document.querySelector('a-scene');
+              let video = sceneEl.querySelector('video');
+
+              if(video){ // Verificamos se o elemento video existe
+                 navigator.mediaDevices.getUserMedia(constraints)
+                    .then(stream => {
+                      video.srcObject = stream;
+                   }).catch(error => {
+                     console.error("Erro ao obter stream de vídeo", error)
+                   });
+              } else {
+                console.error("Elemento de vídeo não encontrado na cena.")
+              }
+             } else {
+               console.error("Nenhuma câmera traseira encontrada")
+             }
           } else {
             console.error('Nenhuma câmera encontrada.');
           }
@@ -60,6 +67,9 @@
           console.error('Erro ao listar dispositivos:', error);
         });
     });
+
+
+
   </script>
 </body>
 </html>
