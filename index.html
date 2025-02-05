@@ -31,7 +31,7 @@
     </a-scene>
 
     <script>
-        async function selectMainRearCamera() {
+        async function setupMainRearCamera() {
             try {
                 if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) {
                     console.error("Este navegador não suporta acesso à câmera.");
@@ -50,12 +50,26 @@
                 );
 
                 if (rearCameras.length > 0) {
-                    // Seleciona a primeira câmera traseira (geralmente a principal)
-                    const mainRearCamera = rearCameras[0];
+                    // Escolhe a câmera com a maior resolução (normalmente a principal)
+                    const sortedCameras = rearCameras.sort((a, b) => {
+                        const resolutionA = parseInt(a.label.match(/\d+/g)?.[0] || "0");
+                        const resolutionB = parseInt(b.label.match(/\d+/g)?.[0] || "0");
+                        return resolutionB - resolutionA;
+                    });
 
-                    // Obtém o elemento <a-scene> e redefine a câmera com o deviceId correto
-                    const scene = document.getElementById('scene');
-                    scene.setAttribute('arjs', `sourceType: webcam; deviceId: ${mainRearCamera.deviceId}; debugUIEnabled: false;`);
+                    const mainRearCamera = sortedCameras[0];
+
+                    // Obtém a stream de vídeo da câmera traseira principal
+                    const stream = await navigator.mediaDevices.getUserMedia({
+                        video: { deviceId: { exact: mainRearCamera.deviceId } }
+                    });
+
+                    // Substitui a câmera do AR.js pelo stream correto
+                    const videoElement = document.querySelector('video');
+                    if (videoElement) {
+                        videoElement.srcObject = stream;
+                        videoElement.play().catch(console.error);
+                    }
                 } else {
                     console.warn('Nenhuma câmera traseira encontrada. Mantendo padrão.');
                 }
@@ -64,8 +78,8 @@
             }
         }
 
-        // Executa a função assim que a página carrega
-        selectMainRearCamera();
+        // Chama a função ao carregar a página
+        setupMainRearCamera();
     </script>
 </body>
 </html>
