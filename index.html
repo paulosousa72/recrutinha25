@@ -1,119 +1,34 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AR Robot</title>
-    <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
-    <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
+    <meta charset='utf-8'>
+    <meta http-equiv='X-UA-Compatible' content='IE=edge'>
+    <title>AR.js - Escanear e Visualizar</title>
+    <meta name='viewport' content='width=device-width, initial-scale=1'>
+    <script src='https://aframe.io/releases/1.0.4/aframe.min.js'></script>
+    <script src='https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js'></script>
     <style>
-        body {
+        /* Estilo para centralizar o canvas e cobrir a tela */
+        html, body {
             margin: 0;
+            padding: 0;
             overflow: hidden;
-            background-color: black;
-            color: white;
-            font-family: Arial, sans-serif;
         }
-        #camera-info {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            background: rgba(0, 0, 0, 0.7);
-            padding: 10px;
-            border-radius: 5px;
+        canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
         }
     </style>
 </head>
-<body>
-    <div id="camera-info">Buscando câmeras...</div>
-
-    <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;">
-        <a-marker preset="hiro">
-            <a-entity 
-                gltf-model="modelos/survival_character.glb"
-                scale="0.5 0.5 0.5"
-                position="0 0.5 0"
-                rotation="0 180 0">
-            </a-entity>
+<body style='margin : 0px; overflow: hidden;'>
+    <a-scene embedded arjs='sourceType: webcam; detectionMode: mono_and_matrix; matrixCodeType: 3x3;'>
+        <a-marker preset='hiro'>
+            <a-box position='0 0.5 0' material='color: red;'></a-box>
         </a-marker>
         <a-entity camera></a-entity>
     </a-scene>
-
-    <script>
-        async function selectPrimaryOrTeleCamera() {
-            try {
-                const cameraInfoDiv = document.getElementById("camera-info");
-
-                if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) {
-                    cameraInfoDiv.innerText = "Este navegador não suporta acesso à câmera.";
-                    alert("Erro: Este navegador não suporta acesso à câmera.");
-                    return;
-                }
-
-                const devices = await navigator.mediaDevices.enumerateDevices();
-                const videoDevices = devices.filter(device => device.kind === 'videoinput');
-
-                if (videoDevices.length === 0) {
-                    cameraInfoDiv.innerText = "Nenhuma câmera encontrada.";
-                    alert("Erro: Nenhuma câmera encontrada.");
-                    return;
-                }
-
-                // Lista todas as câmeras traseiras
-                const rearCameras = videoDevices.filter(device =>
-                    device.label.toLowerCase().includes('back') ||
-                    device.label.toLowerCase().includes('rear') ||
-                    device.label.toLowerCase().includes('environment')
-                );
-
-                let message = "Câmeras encontradas:\n";
-                videoDevices.forEach((device, index) => {
-                    message += `${index + 1}. ${device.label}\n`;
-                });
-
-                if (rearCameras.length === 0) {
-                    cameraInfoDiv.innerText = "Nenhuma câmera traseira encontrada.";
-                    alert(message + "\nNenhuma câmera traseira encontrada.");
-                    return;
-                }
-
-                let selectedCamera = null;
-
-                // 1. Prioriza câmera que contenha "main" ou "tele"
-                selectedCamera = rearCameras.find(camera =>
-                    camera.label.toLowerCase().includes('main') ||
-                    camera.label.toLowerCase().includes('tele')
-                );
-
-                // 2. Se não encontrar, pega a primeira câmera traseira disponível
-                if (!selectedCamera) {
-                    selectedCamera = rearCameras.find(camera =>
-                        !camera.label.toLowerCase().includes('wide') // Evita câmeras ultrawide
-                    ) || rearCameras[0];
-                }
-
-                message += `\nCâmera selecionada: ${selectedCamera.label}`;
-                cameraInfoDiv.innerText = message;
-                alert(message);
-
-                // Obtém o stream da câmera correta
-                const stream = await navigator.mediaDevices.getUserMedia({
-                    video: { deviceId: { exact: selectedCamera.deviceId } }
-                });
-
-                // Define o stream correto no AR.js
-                const videoElement = document.querySelector('video');
-                if (videoElement) {
-                    videoElement.srcObject = stream;
-                    videoElement.play().catch(console.error);
-                }
-            } catch (error) {
-                console.error('Erro ao selecionar a câmera principal ou teleobjetiva:', error);
-                alert("Erro ao selecionar a câmera: " + error.message);
-            }
-        }
-
-        selectPrimaryOrTeleCamera();
-    </script>
 </body>
 </html>
