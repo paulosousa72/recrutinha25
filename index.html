@@ -21,6 +21,7 @@
 </head>
 
 <body>
+  <button id="start-camera">Iniciar Câmera</button>
   <a-scene embedded arjs>
     <a-asset-item id="modelo3d" src="seu_modelo_3d.glb"></a-asset-item>
     <a-marker preset='hiro'>
@@ -30,15 +31,37 @@
   </a-scene>
 
   <script>
-    window.addEventListener('arjs-loaded', () => {
+    document.getElementById('start-camera').addEventListener('click', () => {
       navigator.mediaDevices.getUserMedia({ video: { facingMode: { exact: "environment" } } })
         .then(stream => {
           console.log("Stream obtido:", stream);
           console.log("Permissões:", JSON.stringify(stream.getTracks()[0].getSettings()));
-          document.querySelector('a-scene video').srcObject = stream; //  <-- Importante!
+          const video = document.querySelector('a-scene video');
+           if (video) {
+              video.srcObject = stream;
+           } else {
+              console.error("Elemento de vídeo não encontrado na cena.");
+           }
         })
-        .catch(error => console.error('Erro ao acessar a câmera:', error));
+        .catch(error => {
+          console.error('Erro ao acessar a câmera:', error);
+          if (error.name === 'NotAllowedError') {
+               if (error.message.includes('Permission denied')){
+                  alert("Permissão para acessar a câmera negada. Por favor, conceda a permissão nas configurações do seu navegador.");
+               } else {
+                 alert("Outro aplicativo pode estar usando a câmera. Por favor, feche outros aplicativos e tente novamente.");
+              }
 
+           } else if(error.name === "NotFoundError"){
+              alert("Nenhuma câmera encontrada ou a câmera está indisponível.");
+           } else if (error.name === 'NotReadableError'){
+              alert("A câmera não pode ser acessada neste momento.  Outro aplicativo pode estar usando a câmera ou a câmera pode estar com defeito.");
+           } else if (error.name === 'OverconstrainedError'){
+               alert("As restrições de câmera especificadas não puderam ser atendidas pelo dispositivo. Verifique as configurações de 'facingMode'.");
+           } else {
+             alert("Ocorreu um erro ao acessar a câmera: " + error.message);
+           }
+        });
     });
   </script>
 
