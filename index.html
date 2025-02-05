@@ -15,12 +15,64 @@
             <a-entity
                 gltf-model="C:\Users\po_so\OneDrive\Área de Trabalho\recrutinha25\survival_character.blend"
                 scale="0.5 0.5 0.5"
-                position="0 0 0"
-                rotation="0 0 0">
+                position="0 0.5 0"
+                rotation="0 180 0">
             </a-entity>
         </a-marker>
         <!-- Câmera AR -->
         <a-entity camera></a-entity>
     </a-scene>
+
+    <script>
+        // Função para configurar a câmera traseira
+        async function setupRearCamera() {
+            try {
+                if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) {
+                    console.error("Este navegador não suporta acesso à câmera.");
+                    return;
+                }
+
+                // Lista todos os dispositivos de mídia disponíveis
+                const devices = await navigator.mediaDevices.enumerateDevices();
+                const videoDevices = devices.filter(device => device.kind === 'videoinput');
+
+                // Encontra a primeira câmera traseira disponível
+                const rearCameras = videoDevices.filter(device =>
+                    device.label.toLowerCase().includes('back') ||
+                    device.label.toLowerCase().includes('rear') ||
+                    device.label.toLowerCase().includes('environment')
+                );
+
+                // Seleciona a primeira câmera traseira disponível (padrão)
+                const rearCamera = rearCameras.length > 0 ? rearCameras[0] : null;
+
+                if (rearCamera) {
+                    const constraints = {
+                        video: {
+                            deviceId: { exact: rearCamera.deviceId } // Usa o ID da câmera traseira padrão
+                        }
+                    };
+
+                    // Obtém o stream de vídeo
+                    const stream = await navigator.mediaDevices.getUserMedia(constraints);
+
+                    // Atualiza o elemento de vídeo
+                    const videoElement = document.querySelector('video');
+                    if (videoElement) {
+                        videoElement.srcObject = stream;
+                        videoElement.play().catch(console.error);
+                    }
+                } else {
+                    console.warn('Nenhuma câmera traseira encontrada. Usando câmera padrão.');
+                    const fallbackStream = await navigator.mediaDevices.getUserMedia({ video: true });
+                    document.querySelector('video').srcObject = fallbackStream;
+                }
+            } catch (error) {
+                console.error('Erro ao acessar a câmera traseira:', error);
+            }
+        }
+        // Chama a função para configurar a câmera traseira
+        setupRearCamera();
+    </script>
 </body>
 </html>
