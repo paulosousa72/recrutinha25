@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AR Robot</title>
+    <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
+    <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
+</head>
+<body style="margin: 0; overflow: hidden;">
+    <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;">
+        <!-- Marcador padrão do AR.js (padrão Hiro) -->
+        <a-marker preset="hiro">
+            <!-- Adicionando um modelo 3D de um robô -->
+            <a-entity
+                gltf-model="C:\Users\po_so\OneDrive\Área de Trabalho\recrutinha25\survival_character.blend"
+                scale="0.5 0.5 0.5"
+                position="0 0 0"
+                rotation="0 0 0">
+            </a-entity>
+        </a-marker>
+        <!-- Câmera AR -->
+        <a-entity camera></a-entity>
+    </a-scene>
+</body>
+</html>
