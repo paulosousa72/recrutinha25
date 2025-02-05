@@ -1,34 +1,37 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta charset='utf-8'>
-    <meta http-equiv='X-UA-Compatible' content='IE=edge'>
-    <title>AR.js - Escanear e Visualizar</title>
-    <meta name='viewport' content='width=device-width, initial-scale=1'>
-    <script src='https://aframe.io/releases/1.0.4/aframe.min.js'></script>
-    <script src='https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js'></script>
-    <style>
-        /* Estilo para centralizar o canvas e cobrir a tela */
-        html, body {
-            margin: 0;
-            padding: 0;
-            overflow: hidden;
-        }
-        canvas {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-        }
-    </style>
+  <!-- ... (mesmo head do exemplo anterior) -->
 </head>
+
 <body style='margin : 0px; overflow: hidden;'>
-    <a-scene embedded arjs='sourceType: webcam; detectionMode: mono_and_matrix; matrixCodeType: 3x3;'>
-        <a-marker preset='hiro'>
-            <a-box position='0 0.5 0' material='color: red;'></a-box>
-        </a-marker>
-        <a-entity camera></a-entity>
-    </a-scene>
+  <a-scene embedded arjs>
+    <a-asset-item id="modelo3d" src="seu_modelo_3d.glb"></a-asset-item>
+
+    <a-marker preset='hiro'> <!-- Substitua "hiro" pelo seu padrão de marcador -->
+      <a-entity gltf-model="#modelo3d" scale="0.1 0.1 0.1" animation-mixer></a-entity>
+    </a-marker>
+    <a-entity camera></a-entity>
+  </a-scene>
+
+  <script>
+    // Aguarda o carregamento completo da cena AR.js
+    window.addEventListener('arjs-loaded', () => {
+      navigator.mediaDevices.enumerateDevices()
+        .then(devices => {
+          const cameras = devices.filter(device => device.kind === 'videoinput');
+          if (cameras.length > 1) {
+            // Assume que a câmera traseira é a segunda na lista.  
+            // Você pode precisar ajustar isso dependendo do dispositivo.
+            let constraints = { video: { deviceId: { exact: cameras[1].deviceId } } };
+
+            // Redefine a fonte de vídeo do AR.js
+            let arjsScene = document.querySelector('a-scene');
+            arjsScene.sceneEl.systems['arjs']._updateVideoTexture(constraints);
+          }
+        })
+        .catch(err => console.error('Erro ao listar dispositivos de câmera:', err));
+    });
+  </script>
 </body>
 </html>
