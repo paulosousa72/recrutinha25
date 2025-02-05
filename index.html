@@ -3,67 +3,58 @@
 <head>
   <meta charset='utf-8'>
   <meta http-equiv='X-UA-Compatible' content='IE=edge'>
-  <title>AR.js - Image Tracking</title>
-  <script src='https://aframe.io/releases/1.3.0/aframe.min.js'></script>
-  <script src='https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar-nft.js'></script>
-  <style>
-    body {
-      margin: 0;
-      overflow: hidden;
-      width: 100vw;
-      height: 100vh;
-    }
-    a-scene {
-      width: 100%;
-      height: 100%;
-    }
-  </style>
+  <title>WebXR Test</title>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.137.0/build/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/webxr-polyfill@latest/build/xr-polyfill.js"></script>
 </head>
-
-<body>
-  <button id="start-camera">Iniciar Câmera</button>
-  <a-scene embedded arjs>
-    <a-asset-item id="modelo3d" src="seu_modelo_3d.glb"></a-asset-item>
-    <a-marker preset='hiro'>
-      <a-entity gltf-model="#modelo3d" scale="0.1 0.1 0.1" animation-mixer></a-entity>
-    </a-marker>
-    <a-entity camera></a-entity>
-  </a-scene>
-
+<body style="margin: 0;">
+  <canvas id="xr-canvas"></canvas>
   <script>
-    document.getElementById('start-camera').addEventListener('click', () => {
-      navigator.mediaDevices.getUserMedia({ video: { facingMode: { exact: "environment" } } })
-        .then(stream => {
-          console.log("Stream obtido:", stream);
-          console.log("Permissões:", JSON.stringify(stream.getTracks()[0].getSettings()));
-          const video = document.querySelector('a-scene video');
-           if (video) {
-              video.srcObject = stream;
-           } else {
-              console.error("Elemento de vídeo não encontrado na cena.");
-           }
-        })
-        .catch(error => {
-          console.error('Erro ao acessar a câmera:', error);
-          if (error.name === 'NotAllowedError') {
-               if (error.message.includes('Permission denied')){
-                  alert("Permissão para acessar a câmera negada. Por favor, conceda a permissão nas configurações do seu navegador.");
-               } else {
-                 alert("Outro aplicativo pode estar usando a câmera. Por favor, feche outros aplicativos e tente novamente.");
-              }
+    const canvas = document.getElementById('xr-canvas');
+    const renderer = new THREE.WebGLRenderer({ canvas: canvas });
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
 
-           } else if(error.name === "NotFoundError"){
-              alert("Nenhuma câmera encontrada ou a câmera está indisponível.");
-           } else if (error.name === 'NotReadableError'){
-              alert("A câmera não pode ser acessada neste momento.  Outro aplicativo pode estar usando a câmera ou a câmera pode estar com defeito.");
-           } else if (error.name === 'OverconstrainedError'){
-               alert("As restrições de câmera especificadas não puderam ser atendidas pelo dispositivo. Verifique as configurações de 'facingMode'.");
-           } else {
-             alert("Ocorreu um erro ao acessar a câmera: " + error.message);
+    // Adiciona um cubo à cena
+    const geometry = new THREE.BoxGeometry();
+    const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+    const cube = new THREE.Mesh(geometry, material);
+    scene.add(cube);
+
+    camera.position.z = 5;
+
+
+    async function startXRSession() {
+        if (navigator.xr) {
+           try{
+              const xrSession = await navigator.xr.requestSession('immersive-ar', {
+                 requiredFeatures: ['hit-test'] // adicione recursos conforme necessário
+              });
+              renderer.xr.enabled = true;
+              renderer.xr.setReferenceSpaceType('local');
+              renderer.xr.setSession(xrSession);
+
+              // função animate para renderizar a cena
+              renderer.setAnimationLoop(() => {
+                renderer.render(scene, camera);
+                cube.rotation.x += 0.01;
+                cube.rotation.y += 0.01;
+              });
+
+           } catch(error){
+               console.error("Erro ao iniciar sessão XR:", error);
+              alert("Erro ao iniciar sessão WebXR: " + error.message);
            }
-        });
-    });
+
+         } else{
+          console.error("WebXR não suportado neste navegador.");
+          alert("WebXR não é suportado neste navegador/dispositivo.");
+       }
+
+    }
+
+     startXRSession();
+
   </script>
-
 </body>
 </html>
