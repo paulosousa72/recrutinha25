@@ -16,9 +16,7 @@
 </head>
 <body>
     <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;" id="scene">
-        <!-- Marcador padrão do AR.js (padrão Hiro) -->
         <a-marker preset="hiro">
-            <!-- Adicionando um modelo 3D de um robô -->
             <a-entity 
                 gltf-model="modelos/survival_character.glb"
                 scale="0.5 0.5 0.5"
@@ -26,19 +24,17 @@
                 rotation="0 180 0">
             </a-entity>
         </a-marker>
-        <!-- Câmera AR -->
         <a-entity camera></a-entity>
     </a-scene>
 
     <script>
-        async function setupMainRearCamera() {
+        async function selectPrimaryOrTeleCamera() {
             try {
                 if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) {
                     console.error("Este navegador não suporta acesso à câmera.");
                     return;
                 }
 
-                // Lista todos os dispositivos de mídia
                 const devices = await navigator.mediaDevices.enumerateDevices();
                 const videoDevices = devices.filter(device => device.kind === 'videoinput');
 
@@ -50,21 +46,29 @@
                 );
 
                 if (rearCameras.length > 0) {
-                    // Escolhe a câmera com a maior resolução (normalmente a principal)
-                    const sortedCameras = rearCameras.sort((a, b) => {
-                        const resolutionA = parseInt(a.label.match(/\d+/g)?.[0] || "0");
-                        const resolutionB = parseInt(b.label.match(/\d+/g)?.[0] || "0");
-                        return resolutionB - resolutionA;
-                    });
+                    let selectedCamera = null;
 
-                    const mainRearCamera = sortedCameras[0];
+                    // 1. Prioriza câmera que contenha "main" ou "tele"
+                    selectedCamera = rearCameras.find(camera =>
+                        camera.label.toLowerCase().includes('main') ||
+                        camera.label.toLowerCase().includes('tele')
+                    );
 
-                    // Obtém a stream de vídeo da câmera traseira principal
+                    // 2. Se não encontrar, pega a primeira câmera traseira disponível
+                    if (!selectedCamera) {
+                        selectedCamera = rearCameras.find(camera =>
+                            !camera.label.toLowerCase().includes('wide') // Evita câmeras ultrawide
+                        ) || rearCameras[0];
+                    }
+
+                    console.log("Usando câmera:", selectedCamera.label, selectedCamera.deviceId);
+
+                    // Obtém o stream da câmera correta
                     const stream = await navigator.mediaDevices.getUserMedia({
-                        video: { deviceId: { exact: mainRearCamera.deviceId } }
+                        video: { deviceId: { exact: selectedCamera.deviceId } }
                     });
 
-                    // Substitui a câmera do AR.js pelo stream correto
+                    // Define o stream correto no AR.js
                     const videoElement = document.querySelector('video');
                     if (videoElement) {
                         videoElement.srcObject = stream;
@@ -74,12 +78,12 @@
                     console.warn('Nenhuma câmera traseira encontrada. Mantendo padrão.');
                 }
             } catch (error) {
-                console.error('Erro ao selecionar a câmera principal traseira:', error);
+                console.error('Erro ao selecionar a câmera principal ou teleobjetiva:', error);
             }
         }
 
-        // Chama a função ao carregar a página
-        setupMainRearCamera();
+        selectPrimaryOrTeleCamera();
     </script>
 </body>
 </html>
+
