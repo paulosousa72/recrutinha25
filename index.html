@@ -17,90 +17,90 @@
     startButton.addEventListener('click', startARSession);
 
     async function startARSession() {
-      debugDiv.innerText = "Verificando suporte a WebXR...";
-      if (!navigator.xr) {
-        debugDiv.innerText = "WebXR não disponível no navegador.";
+      debugDiv.innerText = "Verificando WebXR...";
+      if (!navigator.xr || !await navigator.xr.isSessionSupported('immersive-ar')) {
+        debugDiv.innerText = "AR não suportado. Use Chrome em um Android compatível.";
         return;
       }
 
-      const supported = await navigator.xr.isSessionSupported('immersive-ar');
-      if (!supported) {
-        debugDiv.innerText = "AR imersivo não suportado neste dispositivo.";
-        return;
-      }
-
-      debugDiv.innerText = "Iniciando sessão AR...";
+      debugDiv.innerText = "Configurando cena...";
       const canvas = document.createElement('canvas');
       document.body.appendChild(canvas);
       const gl = canvas.getContext('webgl', { xrCompatible: true });
 
-      const renderer = new THREE.WebGLRenderer({ canvas, context: gl });
+      const renderer = new THREE.WebGLRenderer({ canvas, context: gl, alpha: true });
       renderer.setSize(window.innerWidth, window.innerHeight);
 
       const scene = new THREE.Scene();
-      const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 20);
+      const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 1000);
+      scene.add(camera);
 
       const light = new THREE.HemisphereLight(0xffffff, 0xbbbbff, 1);
       scene.add(light);
 
-      debugDiv.innerText = "Carregando modelo 3D...";
+      debugDiv.innerText = "Carregando boneco...";
       const loader = new GLTFLoader();
       let model;
-      loader.load(
-        'boneco.glb',
-        (gltf) => {
-          model = gltf.scene;
-          model.scale.set(0.5, 0.5, 0.5);
-          debugDiv.innerText = "Modelo carregado com sucesso!";
-        },
-        undefined,
-        (error) => {
-          debugDiv.innerText = "Erro ao carregar modelo: " + error.message;
-        }
-      );
+      await new Promise((resolve, reject) => {
+        loader.load(
+          'boneco.glb',
+          (gltf) => {
+            model = gltf.scene;
+            model.scale.set(0.5, 0.5, 0.5);
+            debugDiv.innerText = "Boneco carregado!";
+            resolve();
+          },
+          undefined,
+          (error) => {
+            debugDiv.innerText = "Erro ao carregar boneco: " + error.message;
+            reject(error);
+          }
+        );
+      });
 
       const audio = new Audio('fala.mp3');
       let placed = false;
 
-      try {
-        const session = await navigator.xr.requestSession('immersive-ar', {
-          requiredFeatures: ['hit-test'],
-        });
-        debugDiv.innerText = "Sessão AR iniciada! Detectando chão...";
+      debugDiv.innerText = "Iniciando sessão AR...";
+      const session = await navigator.xr.requestSession('immersive-ar', {
+        optionalFeatures: ['hit-test', 'local-floor']
+      });
 
-        renderer.xr.enabled = true;
-        renderer.xr.setReferenceSpaceType('local-floor');
+      renderer.xr.enabled = true;
+      renderer.xr.setReferenceSpaceType('local-floor');
 
-        let hitTestSource = null;
-        const viewerSpace = await session.requestReferenceSpace('viewer');
-        hitTestSource = await session.requestHitTestSource({ space: viewerSpace });
+      session.addEventListener('end', () => {
+        debugDiv.innerText = "Sessão AR encerrada.";
+      });
 
-        function onXRFrame(timestamp, frame) {
-          if (!frame || !hitTestSource || !model || placed) {
-            renderer.render(scene, camera);
-            return;
-          }
+      const frameOfReference = await session.requestReferenceSpace('local-floor');
+      let hitTestSource = null;
+      const viewerSpace = await session.requestReferenceSpace('viewer');
+      hitTestSource = await session.requestHitTestSource({ space: viewerSpace });
 
+      function render(timestamp, frame) {
+        if (frame) {
           const hitTestResults = frame.getHitTestResults(hitTestSource);
-          if (hitTestResults.length > 0) {
-            const hitPose = hitTestResults[0].getPose(renderer.xr.getReferenceSpace());
-            if (!placed) {
-              model.position.setFromMatrixPosition(new THREE.Matrix4().fromArray(hitPose.transform.matrix));
-              scene.add(model);
-              audio.play();
-              placed = true;
-              debugDiv.innerText = "Boneco colocado! Áudio tocando.";
-            }
+          if (hitTestResults.length && model && !placed) {
+            const hit = hitTestResults[0];
+            const pose = hit.getPose(frameOfReference);
+            model.position.setFromMatrixPosition(new THREE.Matrix4().fromArray(pose.transform.matrix));
+            scene.add(model);
+            audio.play().catch(e => debugDiv.innerText = "Erro no áudio: " + e.message);
+            placed = true;
+            debugDiv.innerText = "Boneco colocado no espaço!";
           }
-          renderer.render(scene, camera);
         }
-
-        renderer.setAnimationLoop(onXRFrame);
-        renderer.xr.setSession(session);
-      } catch (error) {
-        debugDiv.innerText = "Erro ao iniciar sessão AR: " + error.message;
+        renderer.render(scene, camera);
       }
+
+      renderer.xr.setSession(session);
+      renderer.setAnimationLoop(render);
     }
+
+    startARSession().catch(err => {
+      debugDiv.innerText = "Erro geral: " + err.message;
+    });
   </script>
 </body>
 </html>
