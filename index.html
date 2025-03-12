@@ -1,78 +1,30 @@
-<!doctype html>
+<!DOCTYPE html>
 <html>
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
-  <title>Hello WebXR!</title>
-  <script src="https://unpkg.com/three@0.154.0/build/three.js"></script>  <!-- Updated three.js version -->
-  <style>
-    body { margin: 0; overflow: hidden; }  /* Prevent scrollbars and full-screen canvas */
-    canvas { display: block; } /* Prevent whitespace below canvas */
-    #start-button { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1; } /* Center button */
-  </style>
+  <meta charset="utf-8">
+  <title>AR - 25 Anos Instituição</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- Importa A-Frame e AR.js -->
+  <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+  <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
 </head>
 <body>
-<button id="start-button" onclick="activateXR()">Start Hello WebXR</button>
-
-<script>
-async function activateXR() {
-  const startButton = document.getElementById('start-button');
-  startButton.style.display = 'none'; // Hide button after click
-
-  const canvas = document.createElement("canvas");
-  document.body.appendChild(canvas);
-  const gl = canvas.getContext("webgl2", {xrCompatible: true}); // Prefer WebGL2 for better performance
-
-  const scene = new THREE.Scene();
-
-  const materials = [
-    new THREE.MeshBasicMaterial({color: 0xff0000}),
-    new THREE.MeshBasicMaterial({color: 0x0000ff}),
-    new THREE.MeshBasicMaterial({color: 0x00ff00}),
-    new THREE.MeshBasicMaterial({color: 0xff00ff}),
-    new THREE.MeshBasicMaterial({color: 0x00ffff}),
-    new THREE.MeshBasicMaterial({color: 0xffff00})
-  ];
-
-  const cube = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.2, 0.2), materials); // BoxGeometry is now recommended
-  cube.position.set(0, 0, -1); // Place cube in front of user
-  scene.add(cube);
-
-  const renderer = new THREE.WebGLRenderer({
-    canvas: canvas,
-    context: gl,
-    antialias: true // Enable antialiasing for smoother edges
-  });
-  renderer.xr.enabled = true; // Important for three.js XR integration
-  renderer.autoClear = false;
-
-
-  const session = await navigator.xr.requestSession("immersive-ar", {
-    optionalFeatures: ['hit-test']  // Include hit-test for future interaction
-  });
-
-    session.updateRenderState({ baseLayer: new XRWebGLLayer(session, gl) });
-
-
-  const referenceSpace = await session.requestReferenceSpace('local-floor');  // Use 'local-floor' for better AR tracking if available
-
-  const onXRFrame = (time, frame) => {
-    session.requestAnimationFrame(onXRFrame);
-
-    gl.bindFramebuffer(gl.FRAMEBUFFER, session.renderState.baseLayer.framebuffer);
-
-    renderer.render(scene, renderer.xr.getCamera(camera)); // Simpler rendering with three.js XR helper
-  };
-
-  session.requestAnimationFrame(onXRFrame);
-
-  // Add an event listener to end the AR session if the user exits
-    session.addEventListener('end', () => {
-        startButton.style.display = 'block'; // Show the button again
-    });
-
-
-}
-</script>
+  <!-- Cena de AR -->
+  <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;">
+    <!-- Marcador personalizado -->
+    <a-marker type="pattern" url="marcador.patt">
+      <!-- Boneco 3D -->
+      <a-entity 
+        gltf-model="boneco.glb" 
+        scale="0.5 0.5 0.5" 
+        position="0 0 0" 
+        animation="property: rotation; to: 0 360 0; loop: true; dur: 5000">
+      </a-entity>
+      <!-- Áudio -->
+      <a-entity sound="src: fala.mp3; autoplay: true; volume: 1;"></a-entity>
+    </a-marker>
+    <!-- Câmera -->
+    <a-entity camera></a-entity>
+  </a-scene>
 </body>
 </html>
