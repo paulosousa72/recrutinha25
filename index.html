@@ -2,84 +2,59 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>AR - 25 Anos com WebXR</title>
+  <title>AR - Teste Básico WebXR</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
 </head>
 <body>
-  <p style="text-align: center;">Versão: v3.0</p>
+  <p style="text-align: center;">Versão: v1.0</p>
   <button id="startAR">Iniciar AR</button>
   <div id="debug" style="color: red;"></div>
   <script type="module">
     import * as THREE from 'https://unpkg.com/three@0.154.0/build/three.module.js';
-    import { GLTFLoader } from 'https://unpkg.com/three@0.154.0/examples/jsm/loaders/GLTFLoader.js';
 
     const startButton = document.getElementById('startAR');
     const debugDiv = document.getElementById('debug');
     startButton.addEventListener('click', startARSession);
 
-    function startARSession() {
-      debugDiv.innerText = "Passo 1: Verificando WebXR...";
-      if (!navigator.xr) {
-        debugDiv.innerText = "WebXR não disponível.";
+    async function startARSession() {
+      debugDiv.innerText = "Verificando WebXR...";
+      if (!navigator.xr || !await navigator.xr.isSessionSupported('immersive-ar')) {
+        debugDiv.innerText = "AR não suportado neste navegador/dispositivo.";
         return;
       }
 
-      navigator.xr.isSessionSupported('immersive-ar').then(supported => {
-        if (!supported) {
-          debugDiv.innerText = "AR não suportado neste dispositivo.";
-          return;
-        }
+      debugDiv.innerText = "Iniciando AR...";
+      const canvas = document.createElement('canvas');
+      document.body.appendChild(canvas);
+      const gl = canvas.getContext('webgl', { xrCompatible: true });
 
-        debugDiv.innerText = "Passo 2: Configurando cena...";
-        const canvas = document.createElement('canvas');
-        document.body.appendChild(canvas);
-        const gl = canvas.getContext('webgl', { xrCompatible: true });
+      const renderer = new THREE.WebGLRenderer({ canvas, context: gl, alpha: true });
+      renderer.setSize(window.innerWidth, window.innerHeight);
 
-        const renderer = new THREE.WebGLRenderer({ canvas, context: gl, alpha: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
+      const scene = new THREE.Scene();
+      const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 1000);
 
-        const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 1000);
-        scene.add(camera);
+      const geometry = new THREE.SphereGeometry(0.2, 32, 32);
+      const material = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+      const sphere = new THREE.Mesh(geometry, material);
+      sphere.position.set(0, 0, -1); // 1 metro à frente
+      scene.add(sphere);
 
-        const light = new THREE.HemisphereLight(0xffffff, 0xbbbbff, 1);
-        scene.add(light);
+      try {
+        const session = await navigator.xr.requestSession('immersive-ar');
+        debugDiv.innerText = "Sessão AR iniciada! Veja a esfera vermelha.";
 
-        debugDiv.innerText = "Passo 3: Carregando modelo...";
-        const loader = new GLTFLoader();
-        loader.load(
-          'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Duck/glTF-Binary/Duck.glb',
-          (gltf) => {
-            const model = gltf.scene;
-            model.scale.set(0.5, 0.5, 0.5);
-            model.position.set(0, 0, -1);
-            scene.add(model);
-            debugDiv.innerText = "Passo 4: Modelo carregado! Iniciando AR...";
+        renderer.xr.enabled = true;
+        renderer.xr.setReferenceSpaceType('local');
 
-            navigator.xr.requestSession('immersive-ar').then(session => {
-              debugDiv.innerText = "Passo 5: Sessão AR iniciada! Veja o modelo.";
-              renderer.xr.enabled = true;
-              renderer.xr.setReferenceSpaceType('local');
+        renderer.setAnimationLoop((time, frame) => {
+          renderer.render(scene, camera);
+        });
 
-              renderer.setAnimationLoop((time, frame) => {
-                renderer.render(scene, camera);
-              });
-
-              renderer.xr.setSession(session);
-            }).catch(error => {
-              debugDiv.innerText = "Erro na sessão: " + error.message;
-            });
-          },
-          (progress) => {
-            debugDiv.innerText = "Carregando: " + Math.round((progress.loaded / progress.total) * 100) + "%";
-          },
-          (error) => {
-            debugDiv.innerText = "Erro ao carregar modelo: " + error.message;
-          }
-        );
-      }).catch(error => {
-        debugDiv.innerText = "Erro ao verificar WebXR: " + error.message;
-      });
+        await renderer.xr.setSession(session);
+      } catch (error) {
+        debugDiv.innerText = "Erro: " + error.message;
+      }
     }
   </script>
 </body>
