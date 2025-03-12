@@ -1,59 +1,66 @@
-v.2
 <!DOCTYPE html>
 <html>
 <head>
-    <title>AR com Babylon.js</title>
+    <title>AR com Babylon.js no GitHub Pages</title>
+    <style>
+        body { margin: 0; overflow: hidden; }
+        canvas { width: 100%; height: 100%; }
+    </style>
     <script src="https://cdn.babylonjs.com/babylon.js"></script>
     <script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.min.js"></script>
 </head>
 <body>
-    <canvas id="renderCanvas" touch-action="none" style="width: 100%; height: 100vh;"></canvas>
+    <canvas id="renderCanvas"></canvas>
     <script>
-        window.addEventListener("DOMContentLoaded", function () {
-            const canvas = document.getElementById("renderCanvas");
-            const engine = new BABYLON.Engine(canvas, true);
-            
-            const createScene = async function () {
-                const scene = new BABYLON.Scene(engine);
-                const camera = new BABYLON.ArcRotateCamera("camera", Math.PI / 2, Math.PI / 2, 3, BABYLON.Vector3.Zero(), scene);
-                camera.attachControl(canvas, true);
-                
-                // Melhorando iluminação
-                const light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(1, 1, 0), scene);
-                light.intensity = 1.5;
-                
-                // Criar âncora para AR
-                let xrHelper = await scene.createDefaultXRExperienceAsync({
-                    uiOptions: { sessionMode: "immersive-ar" }
-                });
-                const featuresManager = xrHelper.baseExperience.featuresManager;
-                const anchorSystem = featuresManager.enableFeature(BABYLON.WebXRAnchorSystem, "latest");
-                
-                // Carregar modelo 3D de exemplo e posicioná-lo na AR
-                BABYLON.SceneLoader.ImportMesh("", "https://models.babylonjs.com/", "BoomBox.glb", scene, function (meshes) {
-                    const model = meshes[0];
-                    model.scaling = new BABYLON.Vector3(5, 5, 5); // Ajusta o tamanho do modelo
-                    
-                    // Criar âncora quando AR for iniciada
-                    xrHelper.baseExperience.sessionManager.onXRFrameObservable.add(() => {
-                        if (xrHelper.baseExperience.state === BABYLON.WebXRState.IN_XR) {
-                            anchorSystem.addAnchorPoint(new BABYLON.Vector3(0, 0, -1), model);
-                        }
-                    });
-                });
-                
+        const canvas = document.getElementById("renderCanvas");
+        const engine = new BABYLON.Engine(canvas, true);
+
+        const createScene = async function () {
+            const scene = new BABYLON.Scene(engine);
+            const camera = new BABYLON.FreeCamera("camera1", new BABYLON.Vector3(0, 1, -5), scene);
+            camera.setTarget(BABYLON.Vector3.Zero());
+            const light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
+
+            const xr = await scene.createDefaultXRExperienceAsync({
+                floorMeshes: []
+            });
+
+            if (!xr.baseExperience) {
+                alert("WebXR não é suportado neste dispositivo/navegador.");
                 return scene;
-            };
-            
-            createScene().then(scene => {
-                engine.runRenderLoop(function () {
-                    scene.render();
-                });
+            }
+
+            const result = await BABYLON.SceneLoader.ImportMeshAsync("", "https://models.babylonjs.com/", "BoomBox.glb", scene);
+            const character = result.meshes[0];
+            character.scaling = new BABYLON.Vector3(0.05, 0.05, 0.05);
+            character.position = new BABYLON.Vector3(0, 0, 0);
+
+            xr.baseExperience.featuresManager.enableFeature(BABYLON.WebXRHitTest, "latest", {
+                onHitTestResultObservable: (results) => {
+                    if (results.length > 0) {
+                        const hit = results[0];
+                        character.position = hit.position;
+                    }
+                }
             });
-            
-            window.addEventListener("resize", function () {
-                engine.resize();
+
+            xr.baseExperience.enterXRAsync("immersive-ar", "local-floor").then(() => {
+                console.log("Entrou no modo AR!");
+            }).catch((err) => {
+                console.error("Erro ao entrar no AR:", err);
             });
+
+            return scene;
+        };
+
+        createScene().then(scene => {
+            engine.runRenderLoop(() => {
+                scene.render();
+            });
+        });
+
+        window.addEventListener("resize", () => {
+            engine.resize();
         });
     </script>
 </body>
