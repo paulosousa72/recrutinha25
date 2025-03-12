@@ -2,29 +2,83 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>AR - 25 Anos Instituição</title>
+  <title>AR - 25 Anos com WebXR</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <!-- Importa A-Frame e AR.js -->
-  <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
-  <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
 </head>
 <body>
-  <!-- Cena de AR -->
-  <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;">
-    <!-- Marcador personalizado -->
-    <a-marker type="pattern" url="marcador.patt">
-      <!-- Boneco 3D -->
-      <a-entity 
-        gltf-model="boneco.glb" 
-        scale="0.5 0.5 0.5" 
-        position="0 0 0" 
-        animation="property: rotation; to: 0 360 0; loop: true; dur: 5000">
-      </a-entity>
-      <!-- Áudio -->
-      <a-entity sound="src: fala.mp3; autoplay: true; volume: 1;"></a-entity>
-    </a-marker>
-    <!-- Câmera -->
-    <a-entity camera></a-entity>
-  </a-scene>
+  <button id="startAR">Iniciar AR</button>
+  <script type="module">
+    import * as THREE from 'https://unpkg.com/three@0.154.0/build/three.module.js';
+    import { GLTFLoader } from 'https://unpkg.com/three@0.154.0/examples/jsm/loaders/GLTFLoader.js';
+
+    const startButton = document.getElementById('startAR');
+    startButton.addEventListener('click', startARSession);
+
+    async function startARSession() {
+      if (!navigator.xr || !await navigator.xr.isSessionSupported('immersive-ar')) {
+        alert('AR não suportado neste dispositivo ou navegador. Use Chrome no Android.');
+        return;
+      }
+
+      const canvas = document.createElement('canvas');
+      document.body.appendChild(canvas);
+      const gl = canvas.getContext('webgl', { xrCompatible: true });
+
+      const renderer = new THREE.WebGLRenderer({ canvas, context: gl });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+
+      const scene = new THREE.Scene();
+      const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 20);
+
+      const light = new THREE.HemisphereLight(0xffffff, 0xbbbbff, 1);
+      scene.add(light);
+
+      const loader = new GLTFLoader();
+      let model;
+      loader.load('boneco.glb', (gltf) => {
+        model = gltf.scene;
+        model.scale.set(0.5, 0.5, 0.5); // Ajuste a escala conforme o tamanho desejado
+      });
+
+      const audio = new Audio('fala.mp3');
+      let placed = false;
+
+      const session = await navigator.xr.requestSession('immersive-ar', {
+        requiredFeatures: ['hit-test'],
+      });
+
+      renderer.xr.enabled = true;
+      renderer.xr.setReferenceSpaceType('local-floor'); // Ancora no chão
+
+      let hitTestSource = null;
+      session.requestReferenceSpace('viewer').then((viewerSpace) => {
+        session.requestHitTestSource({ space: viewerSpace }).then((source) => {
+          hitTestSource = source;
+        });
+      });
+
+      function onXRFrame(timestamp, frame) {
+        if (!frame || !hitTestSource || !model || placed) {
+          renderer.render(scene, camera);
+          return;
+        }
+
+        const hitTestResults = frame.getHitTestResults(hitTestSource);
+        if (hitTestResults.length > 0) {
+          const hitPose = hitTestResults[0].getPose(renderer.xr.getReferenceSpace());
+          if (!placed) {
+            model.position.setFromMatrixPosition(new THREE.Matrix4().fromArray(hitPose.transform.matrix));
+            scene.add(model);
+            audio.play();
+            placed = true;
+          }
+        }
+        renderer.render(scene, camera);
+      }
+
+      renderer.setAnimationLoop(onXRFrame);
+      renderer.xr.setSession(session);
+    }
+  </script>
 </body>
 </html>
