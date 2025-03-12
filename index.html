@@ -2,13 +2,14 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>AR - Teste Básico WebXR</title>
+  <title>AR - 25 Anos com WebXR</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <!-- Inclui THREE.js diretamente -->
+  <!-- Inclui THREE.js e GLTFLoader diretamente -->
   <script src="https://unpkg.com/three@0.154.0/build/three.min.js"></script>
+  <script src="https://unpkg.com/three@0.154.0/examples/js/loaders/GLTFLoader.js"></script>
 </head>
 <body>
-  <p style="text-align: center;">Versão: v4.0</p>
+  <p style="text-align: center;">Versão: v4.1</p>
   <button id="startAR">Iniciar AR</button>
   <div id="debug" style="color: red;"></div>
   <script>
@@ -39,27 +40,44 @@
 
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 1000);
+        scene.add(camera);
 
-        const geometry = new THREE.SphereGeometry(0.2, 32, 32);
-        const material = new THREE.MeshBasicMaterial({ color: 0xff0000 });
-        const sphere = new THREE.Mesh(geometry, material);
-        sphere.position.set(0, 0, -1); // 1 metro à frente
-        scene.add(sphere);
+        const light = new THREE.HemisphereLight(0xffffff, 0xbbbbff, 1);
+        scene.add(light);
 
-        debugDiv.innerText = "Passo 3: Iniciando sessão AR...";
-        navigator.xr.requestSession('immersive-ar').then(session => {
-          debugDiv.innerText = "Passo 4: Sessão AR iniciada! Veja a esfera vermelha.";
-          renderer.xr.enabled = true;
-          renderer.xr.setReferenceSpaceType('local');
+        debugDiv.innerText = "Passo 3: Carregando boneco...";
+        const loader = new THREE.GLTFLoader();
+        loader.load(
+          'boneco.glb',
+          // Para teste alternativo: 'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Duck/glTF-Binary/Duck.glb',
+          (gltf) => {
+            const model = gltf.scene;
+            model.scale.set(0.5, 0.5, 0.5);
+            model.position.set(0, 0, -1); // 1 metro à frente
+            scene.add(model);
+            debugDiv.innerText = "Passo 4: Boneco carregado! Iniciando AR...";
 
-          renderer.setAnimationLoop((time, frame) => {
-            renderer.render(scene, camera);
-          });
+            navigator.xr.requestSession('immersive-ar').then(session => {
+              debugDiv.innerText = "Passo 5: Sessão AR iniciada! Veja o boneco.";
+              renderer.xr.enabled = true;
+              renderer.xr.setReferenceSpaceType('local');
 
-          renderer.xr.setSession(session);
-        }).catch(error => {
-          debugDiv.innerText = "Erro na sessão: " + error.message;
-        });
+              renderer.setAnimationLoop((time, frame) => {
+                renderer.render(scene, camera);
+              });
+
+              renderer.xr.setSession(session);
+            }).catch(error => {
+              debugDiv.innerText = "Erro na sessão: " + error.message;
+            });
+          },
+          (progress) => {
+            debugDiv.innerText = "Carregando: " + Math.round((progress.loaded / progress.total) * 100) + "%";
+          },
+          (error) => {
+            debugDiv.innerText = "Erro ao carregar boneco: " + error.message;
+          }
+        );
       }).catch(error => {
         debugDiv.innerText = "Erro ao verificar WebXR: " + error.message;
       });
