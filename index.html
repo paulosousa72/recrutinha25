@@ -4,15 +4,21 @@
   <meta charset="utf-8">
   <title>AR - 25 Anos com WebXR</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <!-- Inclui THREE.js e GLTFLoader diretamente -->
+  <!-- Inclui THREE.js -->
   <script src="https://unpkg.com/three@0.154.0/build/three.min.js"></script>
+  <!-- Inclui GLTFLoader e registra no THREE -->
   <script src="https://unpkg.com/three@0.154.0/examples/js/loaders/GLTFLoader.js"></script>
 </head>
 <body>
-  <p style="text-align: center;">Versão: v4.1</p>
+  <p style="text-align: center;">Versão: v4.3</p>
   <button id="startAR">Iniciar AR</button>
   <div id="debug" style="color: red;"></div>
   <script>
+    // Confirma que THREE e GLTFLoader estão disponíveis
+    if (!THREE || !THREE.GLTFLoader) {
+      console.error("THREE ou GLTFLoader não carregado corretamente.");
+    }
+
     const startButton = document.getElementById('startAR');
     const debugDiv = document.getElementById('debug');
     startButton.addEventListener('click', startARSession);
@@ -45,20 +51,19 @@
         const light = new THREE.HemisphereLight(0xffffff, 0xbbbbff, 1);
         scene.add(light);
 
-        debugDiv.innerText = "Passo 3: Carregando boneco...";
+        debugDiv.innerText = "Passo 3: Carregando pato...";
         const loader = new THREE.GLTFLoader();
         loader.load(
-          'boneco.glb',
-          // Para teste alternativo: 'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Duck/glTF-Binary/Duck.glb',
+          'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Duck/glTF-Binary/Duck.glb',
           (gltf) => {
             const model = gltf.scene;
             model.scale.set(0.5, 0.5, 0.5);
             model.position.set(0, 0, -1); // 1 metro à frente
             scene.add(model);
-            debugDiv.innerText = "Passo 4: Boneco carregado! Iniciando AR...";
+            debugDiv.innerText = "Passo 4: Pato carregado! Iniciando AR...";
 
             navigator.xr.requestSession('immersive-ar').then(session => {
-              debugDiv.innerText = "Passo 5: Sessão AR iniciada! Veja o boneco.";
+              debugDiv.innerText = "Passo 5: Sessão AR iniciada! Veja o pato.";
               renderer.xr.enabled = true;
               renderer.xr.setReferenceSpaceType('local');
 
@@ -75,7 +80,7 @@
             debugDiv.innerText = "Carregando: " + Math.round((progress.loaded / progress.total) * 100) + "%";
           },
           (error) => {
-            debugDiv.innerText = "Erro ao carregar boneco: " + error.message;
+            debugDiv.innerText = "Erro ao carregar pato: " + error.message;
           }
         );
       }).catch(error => {
