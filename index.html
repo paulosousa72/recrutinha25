@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>AR - Teste Básico WebXR</title>
+  <title>AR - 25 Anos com WebXR</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
 </head>
 <body>
@@ -10,6 +10,7 @@
   <div id="debug" style="color: red;"></div>
   <script type="module">
     import * as THREE from 'https://unpkg.com/three@0.154.0/build/three.module.js';
+    import { GLTFLoader } from 'https://unpkg.com/three@0.154.0/examples/jsm/loaders/GLTFLoader.js';
 
     const startButton = document.getElementById('startAR');
     const debugDiv = document.getElementById('debug');
@@ -22,7 +23,7 @@
         return;
       }
 
-      debugDiv.innerText = "Iniciando AR...";
+      debugDiv.innerText = "Configurando cena...";
       const canvas = document.createElement('canvas');
       document.body.appendChild(canvas);
       const gl = canvas.getContext('webgl', { xrCompatible: true });
@@ -32,30 +33,66 @@
 
       const scene = new THREE.Scene();
       const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 1000);
+      scene.add(camera);
 
-      // Adiciona uma esfera simples
-      const geometry = new THREE.SphereGeometry(0.2, 32, 32);
-      const material = new THREE.MeshBasicMaterial({ color: 0xff0000 });
-      const sphere = new THREE.Mesh(geometry, material);
-      sphere.position.set(0, 0, -1); // 1 metro à frente
-      scene.add(sphere);
+      const light = new THREE.HemisphereLight(0xffffff, 0xbbbbff, 1);
+      scene.add(light);
 
-      try {
-        const session = await navigator.xr.requestSession('immersive-ar');
-        debugDiv.innerText = "Sessão AR iniciada! Veja a esfera vermelha.";
+      debugDiv.innerText = "Carregando boneco...";
+      const loader = new GLTFLoader();
+      let model;
+      await new Promise((resolve, reject) => {
+        loader.load(
+          'boneco.glb',
+          (gltf) => {
+            model = gltf.scene;
+            model.scale.set(0.5, 0.5, 0.5); // Ajuste a escala se necessário
+            debugDiv.innerText = "Boneco carregado!";
+            resolve();
+          },
+          undefined,
+          (error) => {
+            debugDiv.innerText = "Erro ao carregar boneco: " + error.message;
+            reject(error);
+          }
+        );
+      });
 
-        renderer.xr.enabled = true;
-        renderer.xr.setReferenceSpaceType('local');
+      let placed = false;
 
-        renderer.setAnimationLoop((time, frame) => {
-          renderer.render(scene, camera);
-        });
+      debugDiv.innerText = "Iniciando sessão AR...";
+      const session = await navigator.xr.requestSession('immersive-ar', {
+        optionalFeatures: ['hit-test', 'local-floor']
+      });
 
-        await renderer.xr.setSession(session);
-      } catch (error) {
-        debugDiv.innerText = "Erro: " + error.message;
+      renderer.xr.enabled = true;
+      renderer.xr.setReferenceSpaceType('local-floor');
+
+      const referenceSpace = await session.requestReferenceSpace('local-floor');
+      const hitTestSource = await session.requestHitTestSource({ space: await session.requestReferenceSpace('viewer') });
+
+      function render(timestamp, frame) {
+        if (frame && !placed) {
+          const hitTestResults = frame.getHitTestResults(hitTestSource);
+          if (hitTestResults.length) {
+            const hit = hitTestResults[0];
+            const pose = hit.getPose(referenceSpace);
+            model.position.setFromMatrixPosition(new THREE.Matrix4().fromArray(pose.transform.matrix));
+            scene.add(model);
+            placed = true;
+            debugDiv.innerText = "Boneco colocado no espaço!";
+          }
+        }
+        renderer.render(scene, camera);
       }
+
+      renderer.setAnimationLoop(render);
+      await renderer.xr.setSession(session);
     }
+
+    startARSession().catch(err => {
+      debugDiv.innerText = "Erro geral: " + err.message;
+    });
   </script>
 </body>
 </html>
