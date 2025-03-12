@@ -1,6 +1,3 @@
-Compreendo que você não é programador, e farei o meu melhor para fornecer um código o mais completo e explicativo possível. No entanto, é importante ressaltar que criar uma experiência de Realidade Aumentada (RA) com detecção de plano, mesmo com bibliotecas como Three.js e WebXR, envolve um certo nível de complexidade. O código que vou fornecer é um ponto de partida funcional, mas não é um produto final polido. Ele pode precisar de ajustes e otimizações dependendo do seu modelo 3D, do dispositivo e do navegador que você estiver usando.
-
-Código Completo (WebXR + Three.js):
 
 <!DOCTYPE html>
 <html>
@@ -105,6 +102,34 @@ Código Completo (WebXR + Three.js):
             startButton.style.display = 'none'; // Oculta o botão
             document.getElementById('info').innerHTML = "Procurando superfície...";
 
+            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                    // Se chegou aqui, a permissão foi concedida (ou já estava concedida).
+                    // Podemos prosseguir.  Pare a stream imediatamente, pois só precisamos
+                    // verificar a permissão.
+                    stream.getTracks().forEach(track => track.stop());
+
+                } catch (error) {
+                    console.error("Erro ao acessar a câmera:", error);
+
+                if (error.name === 'NotAllowedError') {
+                    document.getElementById('info').innerHTML = "Permissão da câmera negada. Por favor, permita o acesso nas configurações do navegador.";
+                } else if (error.name === 'NotFoundError') {
+                    document.getElementById('info').innerHTML = "Nenhuma câmera encontrada.";
+                } else {
+		    		document.getElementById('info').innerHTML = "Erro ao acessar a câmera. Verifique as configurações.";
+		    	}
+
+                    startButton.style.display = 'block'; // Mostra o botão novamente.
+                    return; // Sai da função startAR()
+                }
+            } else {
+                document.getElementById('info').innerHTML = "getUserMedia não suportado.";
+                startButton.style.display = 'block';
+                return;
+            }
+                
 
             try {
                 // 6. Solicitar sessão de RA
