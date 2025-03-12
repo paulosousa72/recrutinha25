@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>AR - 25 Anos com WebXR</title>
+  <title>AR - Teste Básico WebXR</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
 </head>
 <body>
@@ -10,7 +10,6 @@
   <div id="debug" style="color: red;"></div>
   <script type="module">
     import * as THREE from 'https://unpkg.com/three@0.154.0/build/three.module.js';
-    import { GLTFLoader } from 'https://unpkg.com/three@0.154.0/examples/jsm/loaders/GLTFLoader.js';
 
     const startButton = document.getElementById('startAR');
     const debugDiv = document.getElementById('debug');
@@ -19,11 +18,11 @@
     async function startARSession() {
       debugDiv.innerText = "Verificando WebXR...";
       if (!navigator.xr || !await navigator.xr.isSessionSupported('immersive-ar')) {
-        debugDiv.innerText = "AR não suportado. Use Chrome em um Android compatível.";
+        debugDiv.innerText = "AR não suportado neste navegador/dispositivo.";
         return;
       }
 
-      debugDiv.innerText = "Configurando cena...";
+      debugDiv.innerText = "Iniciando AR...";
       const canvas = document.createElement('canvas');
       document.body.appendChild(canvas);
       const gl = canvas.getContext('webgl', { xrCompatible: true });
@@ -33,74 +32,30 @@
 
       const scene = new THREE.Scene();
       const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 1000);
-      scene.add(camera);
 
-      const light = new THREE.HemisphereLight(0xffffff, 0xbbbbff, 1);
-      scene.add(light);
+      // Adiciona uma esfera simples
+      const geometry = new THREE.SphereGeometry(0.2, 32, 32);
+      const material = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+      const sphere = new THREE.Mesh(geometry, material);
+      sphere.position.set(0, 0, -1); // 1 metro à frente
+      scene.add(sphere);
 
-      debugDiv.innerText = "Carregando boneco...";
-      const loader = new GLTFLoader();
-      let model;
-      await new Promise((resolve, reject) => {
-        loader.load(
-          'boneco.glb',
-          (gltf) => {
-            model = gltf.scene;
-            model.scale.set(0.5, 0.5, 0.5);
-            debugDiv.innerText = "Boneco carregado!";
-            resolve();
-          },
-          undefined,
-          (error) => {
-            debugDiv.innerText = "Erro ao carregar boneco: " + error.message;
-            reject(error);
-          }
-        );
-      });
+      try {
+        const session = await navigator.xr.requestSession('immersive-ar');
+        debugDiv.innerText = "Sessão AR iniciada! Veja a esfera vermelha.";
 
-      const audio = new Audio('fala.mp3');
-      let placed = false;
+        renderer.xr.enabled = true;
+        renderer.xr.setReferenceSpaceType('local');
 
-      debugDiv.innerText = "Iniciando sessão AR...";
-      const session = await navigator.xr.requestSession('immersive-ar', {
-        optionalFeatures: ['hit-test', 'local-floor']
-      });
+        renderer.setAnimationLoop((time, frame) => {
+          renderer.render(scene, camera);
+        });
 
-      renderer.xr.enabled = true;
-      renderer.xr.setReferenceSpaceType('local-floor');
-
-      session.addEventListener('end', () => {
-        debugDiv.innerText = "Sessão AR encerrada.";
-      });
-
-      const frameOfReference = await session.requestReferenceSpace('local-floor');
-      let hitTestSource = null;
-      const viewerSpace = await session.requestReferenceSpace('viewer');
-      hitTestSource = await session.requestHitTestSource({ space: viewerSpace });
-
-      function render(timestamp, frame) {
-        if (frame) {
-          const hitTestResults = frame.getHitTestResults(hitTestSource);
-          if (hitTestResults.length && model && !placed) {
-            const hit = hitTestResults[0];
-            const pose = hit.getPose(frameOfReference);
-            model.position.setFromMatrixPosition(new THREE.Matrix4().fromArray(pose.transform.matrix));
-            scene.add(model);
-            audio.play().catch(e => debugDiv.innerText = "Erro no áudio: " + e.message);
-            placed = true;
-            debugDiv.innerText = "Boneco colocado no espaço!";
-          }
-        }
-        renderer.render(scene, camera);
+        await renderer.xr.setSession(session);
+      } catch (error) {
+        debugDiv.innerText = "Erro: " + error.message;
       }
-
-      renderer.xr.setSession(session);
-      renderer.setAnimationLoop(render);
     }
-
-    startARSession().catch(err => {
-      debugDiv.innerText = "Erro geral: " + err.message;
-    });
   </script>
 </body>
 </html>
