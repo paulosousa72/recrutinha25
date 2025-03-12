@@ -4,19 +4,28 @@
   <meta charset="utf-8">
   <title>AR - 25 Anos com WebXR</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <!-- Inclui THREE.js -->
+  <!-- Carrega THREE.js -->
   <script src="https://unpkg.com/three@0.154.0/build/three.min.js"></script>
-  <!-- Inclui GLTFLoader e registra no THREE -->
+  <!-- Carrega GLTFLoader -->
   <script src="https://unpkg.com/three@0.154.0/examples/js/loaders/GLTFLoader.js"></script>
+  <!-- Corrige o GLTFLoader no escopo global -->
+  <script>
+    // Garante que GLTFLoader esteja disponível em THREE
+    if (typeof THREE !== 'undefined' && typeof THREE.GLTFLoader === 'undefined') {
+      console.log("Registrando GLTFLoader manualmente...");
+      THREE.GLTFLoader = GLTFLoader;
+    }
+  </script>
 </head>
 <body>
-  <p style="text-align: center;">Versão: v4.3</p>
+  <p style="text-align: center;">Versão: v4.4</p>
   <button id="startAR">Iniciar AR</button>
   <div id="debug" style="color: red;"></div>
   <script>
-    // Confirma que THREE e GLTFLoader estão disponíveis
+    // Verifica se THREE e GLTFLoader estão carregados
     if (!THREE || !THREE.GLTFLoader) {
-      console.error("THREE ou GLTFLoader não carregado corretamente.");
+      console.error("Erro: THREE ou GLTFLoader não carregado corretamente.");
+      document.getElementById('debug').innerText = "Erro: THREE ou GLTFLoader não carregado.";
     }
 
     const startButton = document.getElementById('startAR');
@@ -87,6 +96,3 @@
         debugDiv.innerText = "Erro ao verificar WebXR: " + error.message;
       });
     }
-  </script>
-</body>
-</html>
