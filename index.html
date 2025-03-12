@@ -1,173 +1,87 @@
-versao 1.0
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Realidade Aumentada - Pato</title>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <style>
-        body { margin: 0; overflow: hidden; }
-        #info {
-            position: absolute;
-            top: 10px;
-            width: 100%;
-            text-align: center;
-            z-index: 1;
-            color: white;
-            font-family: sans-serif;
-        }
-        #startButton {
-            position: absolute;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            padding: 10px 20px;
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 16px;
-        }
-    </style>
+  <meta charset="utf-8">
+  <title>AR - 25 Anos com WebXR</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
 </head>
 <body>
-    <div id="info">Toque na tela para posicionar o pato.</div>
-    <button id="startButton">Iniciar AR</button>
+  <p style="text-align: center;">Versão: v3.1</p>
+  <button id="startAR">Iniciar AR</button>
+  <div id="debug" style="color: red;"></div>
+  <script type="module">
+    // Imports corrigidos com caminhos absolutos
+    import * as THREE from 'https://unpkg.com/three@0.154.0/build/three.module.js';
+    import { GLTFLoader } from 'https://unpkg.com/three@0.154.0/examples/jsm/loaders/GLTFLoader.js';
 
-    <script src="https://cdn.jsdelivr.net/npm/three@latest/build/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@latest/examples/jsm/loaders/GLTFLoader.js"></script>
+    const startButton = document.getElementById('startAR');
+    const debugDiv = document.getElementById('debug');
+    startButton.addEventListener('click', startARSession);
 
+    function startARSession() {
+      debugDiv.innerText = "Passo 1: Verificando WebXR...";
+      if (!navigator.xr) {
+        debugDiv.innerText = "WebXR não disponível.";
+        return;
+      }
 
-    <script>
-        let camera, scene, renderer;
-        let pato;
-        let xrSession = null;
-        let xrReferenceSpace = null;
-        let xrHitTestSource = null;
+      navigator.xr.isSessionSupported('immersive-ar').then(supported => {
+        if (!supported) {
+          debugDiv.innerText = "AR não suportado neste dispositivo.";
+          return;
+        }
 
-        const startButton = document.getElementById('startButton');
+        debugDiv.innerText = "Passo 2: Configurando cena...";
+        const canvas = document.createElement('canvas');
+        document.body.appendChild(canvas);
+        const gl = canvas.getContext('webgl', { xrCompatible: true });
 
-        init();
+        const renderer = new THREE.WebGLRenderer({ canvas, context: gl, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
 
-        async function init() {
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 1000);
+        scene.add(camera);
 
-            // 1. Verificar suporte a WebXR
-            if (navigator.xr) {
-                const isARSupported = await navigator.xr.isSessionSupported('immersive-ar');
-                if (isARSupported) {
-                    startButton.addEventListener('click', startAR);
-                } else {
-                  startButton.textContent = "WebXR Não Suportado";
-                  startButton.disabled = true;
-                }
-            } else {
-                document.getElementById('info').innerHTML = "WebXR não suportado neste navegador/dispositivo.";
-                startButton.style.display = 'none';
-                return; // Sai da função se não houver suporte
-            }
+        const light = new THREE.HemisphereLight(0xffffff, 0xbbbbff, 1);
+        scene.add(light);
 
-            // 2. Configurar Three.js
-            scene = new THREE.Scene();
-            camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 100);
-            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            //renderer.setPixelRatio(window.devicePixelRatio); // Teste sem esta linha primeiro.
-            renderer.xr.enabled = true;
-            document.body.appendChild(renderer.domElement);
+        debugDiv.innerText = "Passo 3: Carregando modelo...";
+        const loader = new GLTFLoader();
+        loader.load(
+          'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Duck/glTF-Binary/Duck.glb',
+          (gltf) => {
+            const model = gltf.scene;
+            model.scale.set(0.5, 0.5, 0.5);
+            model.position.set(0, 0, -1);
+            scene.add(model);
+            debugDiv.innerText = "Passo 4: Modelo carregado! Iniciando AR...";
 
+            navigator.xr.requestSession('immersive-ar').then(session => {
+              debugDiv.innerText = "Passo 5: Sessão AR iniciada! Veja o modelo.";
+              renderer.xr.enabled = true;
+              renderer.xr.setReferenceSpaceType('local');
 
-            // 3. Luz ambiente (importante para visualização do modelo)
-            const ambientLight = new THREE.AmbientLight(0xffffff, 1); // Aumentei a intensidade para 1
-            scene.add(ambientLight);
+              renderer.setAnimationLoop((time, frame) => {
+                renderer.render(scene, camera);
+              });
 
-
-            // 4. Carregar o modelo 3D do pato
-            const loader = new THREE.GLTFLoader();
-            loader.load('https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Duck/glTF-Binary/Duck.glb', (gltf) => {
-                pato = gltf.scene;
-                pato.scale.set(0.3, 0.3, 0.3); // Ajustei a escala para o pato
-                pato.visible = false;
-                scene.add(pato);
-            }, undefined, (error) => {
-                console.error('Erro ao carregar o modelo:', error);
-                document.getElementById('info').innerHTML = "Erro ao carregar o modelo 3D.";
+              renderer.xr.setSession(session);
+            }).catch(error => {
+              debugDiv.innerText = "Erro na sessão: " + error.message;
             });
-
-
-            // 5. Lidar com redimensionamento da janela
-            window.addEventListener('resize', onWindowResize, false);
-
-        }
-
-
-        async function startAR() {
-            startButton.style.display = 'none';
-            document.getElementById('info').innerHTML = "Procurando superfície...";
-
-
-            try{
-                // 6. Solicitar sessão de RA
-                xrSession = await navigator.xr.requestSession('immersive-ar', {
-                    requiredFeatures: ['hit-test']
-                });
-
-                // 7. Configurar o espaço de referência
-                xrReferenceSpace = await xrSession.requestReferenceSpace('local'); // Mudei para 'local'
-
-                // 8. Criar a fonte de hit test
-                xrHitTestSource = await xrSession.requestHitTestSource({ space: xrReferenceSpace });
-
-                 //9. Evento para quando a sessão terminar
-                xrSession.addEventListener('end', () => {
-                  xrHitTestSource = null;
-                  xrSession = null;
-                  startButton.style.display = 'block';
-                });
-
-                // 10. Adicionar evento de clique/toque para posicionar o pato
-                xrSession.addEventListener('select', onSelect);
-
-                // 11. Iniciar o loop de renderização
-                renderer.setAnimationLoop(onXRFrame); // Usando setAnimationLoop
-
-
-            } catch (error) {
-                console.error('Erro ao iniciar a sessão AR:', error);
-                document.getElementById('info').innerHTML = "Erro ao iniciar a Realidade Aumentada.";
-            }
-        }
-
-        function onXRFrame(time, frame) {
-             if (!xrSession) return;
-
-            const hitTestResults = frame.getHitTestResults(xrHitTestSource);
-
-            if (hitTestResults.length > 0 && pato) {
-                const hitPose = hitTestResults[0].getPose(xrReferenceSpace);
-                if(hitPose){
-                    pato.position.copy(hitPose.transform.position);
-                    pato.quaternion.copy(hitPose.transform.orientation); // Adicionado para orientar corretamente
-                    pato.visible = true;
-                    document.getElementById('info').innerHTML = "Toque na tela para reposicionar o pato.";
-                }
-
-            }
-
-        }
-
-        function onSelect() {
-            // O reposicionamento do pato já é feito no onXRFrame, então essa função pode ficar vazia
-            // ou você pode adicionar outras interações aqui.
-        }
-
-
-        function onWindowResize() {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        }
-
-    </script>
+          },
+          (progress) => {
+            debugDiv.innerText = "Carregando: " + Math.round((progress.loaded / progress.total) * 100) + "%";
+          },
+          (error) => {
+            debugDiv.innerText = "Erro ao carregar modelo: " + error.message;
+          }
+        );
+      }).catch(error => {
+        debugDiv.innerText = "Erro ao verificar WebXR: " + error.message;
+      });
+    }
+  </script>
 </body>
 </html>
