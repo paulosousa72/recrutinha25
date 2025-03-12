@@ -45,9 +45,9 @@
       try {
         await new Promise((resolve, reject) => {
           loader.load(
-            'boneco.glb',
+            //'boneco.glb',
             // Para teste alternativo, comente acima e descomente abaixo:
-            // 'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Duck/glTF-Binary/Duck.glb',
+            'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Duck/glTF-Binary/Duck.glb',
             (gltf) => {
               model = gltf.scene;
               model.scale.set(0.5, 0.5, 0.5);
