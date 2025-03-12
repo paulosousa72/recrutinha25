@@ -2,15 +2,15 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>AR - 25 Anos com WebXR</title>
+  <title>AR - Teste Básico WebXR</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
 </head>
 <body>
+  <p style="text-align: center;">Versão: v1.0</p>
   <button id="startAR">Iniciar AR</button>
   <div id="debug" style="color: red;"></div>
   <script type="module">
     import * as THREE from 'https://unpkg.com/three@0.154.0/build/three.module.js';
-    import { GLTFLoader } from 'https://unpkg.com/three@0.154.0/examples/jsm/loaders/GLTFLoader.js';
 
     const startButton = document.getElementById('startAR');
     const debugDiv = document.getElementById('debug');
@@ -23,7 +23,7 @@
         return;
       }
 
-      debugDiv.innerText = "Configurando cena...";
+      debugDiv.innerText = "Iniciando AR...";
       const canvas = document.createElement('canvas');
       document.body.appendChild(canvas);
       const gl = canvas.getContext('webgl', { xrCompatible: true });
@@ -33,41 +33,16 @@
 
       const scene = new THREE.Scene();
       const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 1000);
-      scene.add(camera);
 
-      const light = new THREE.HemisphereLight(0xffffff, 0xbbbbff, 1);
-      scene.add(light);
+      const geometry = new THREE.SphereGeometry(0.2, 32, 32);
+      const material = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+      const sphere = new THREE.Mesh(geometry, material);
+      sphere.position.set(0, 0, -1); // 1 metro à frente
+      scene.add(sphere);
 
-      debugDiv.innerText = "Carregando boneco...";
-      const loader = new GLTFLoader();
-      let model;
-      await new Promise((resolve, reject) => {
-        loader.load(
-          'boneco.glb', // Tente seu arquivo primeiro
-          // Para teste, comente a linha acima e descomente abaixo:
-          // 'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Duck/glTF-Binary/Duck.glb',
-          (gltf) => {
-            model = gltf.scene;
-            model.scale.set(0.5, 0.5, 0.5);
-            model.position.set(0, 0, -1); // 1 metro à frente
-            scene.add(model);
-            debugDiv.innerText = "Boneco carregado!";
-            resolve();
-          },
-          (progress) => {
-            debugDiv.innerText = "Progresso: " + Math.round((progress.loaded / progress.total) * 100) + "%";
-          },
-          (error) => {
-            debugDiv.innerText = "Erro ao carregar boneco: " + error.message;
-            reject(error);
-          }
-        );
-      });
-
-      debugDiv.innerText = "Iniciando sessão AR...";
       try {
         const session = await navigator.xr.requestSession('immersive-ar');
-        debugDiv.innerText = "Sessão AR iniciada! Veja o boneco.";
+        debugDiv.innerText = "Sessão AR iniciada! Veja a esfera vermelha.";
 
         renderer.xr.enabled = true;
         renderer.xr.setReferenceSpaceType('local');
