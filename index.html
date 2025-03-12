@@ -1,4 +1,3 @@
-v1.0
 <!DOCTYPE html>
 <html>
 <head>
@@ -22,16 +21,24 @@ v1.0
                 const light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(1, 1, 0), scene);
                 light.intensity = 1.5;
                 
-                // Carregar modelo 3D de exemplo
+                // Criar âncora para AR
+                let xrHelper = await scene.createDefaultXRExperienceAsync({
+                    uiOptions: { sessionMode: "immersive-ar" }
+                });
+                const featuresManager = xrHelper.baseExperience.featuresManager;
+                const anchorSystem = featuresManager.enableFeature(BABYLON.WebXRAnchorSystem, "latest");
+                
+                // Carregar modelo 3D de exemplo e posicioná-lo na AR
                 BABYLON.SceneLoader.ImportMesh("", "https://models.babylonjs.com/", "BoomBox.glb", scene, function (meshes) {
                     const model = meshes[0];
-                    model.position = new BABYLON.Vector3(0, 0.5, 0); // Levanta o modelo para que não fique abaixo do chão
-                    model.scaling = new BABYLON.Vector3(5, 5, 5); // Aumenta o tamanho do modelo
-                });
-                
-                // Ativar WebXR para AR
-                const xrHelper = await scene.createDefaultXRExperienceAsync({
-                    uiOptions: { sessionMode: "immersive-ar" }
+                    model.scaling = new BABYLON.Vector3(5, 5, 5); // Ajusta o tamanho do modelo
+                    
+                    // Criar âncora quando AR for iniciada
+                    xrHelper.baseExperience.sessionManager.onXRFrameObservable.add(() => {
+                        if (xrHelper.baseExperience.state === BABYLON.WebXRState.IN_XR) {
+                            anchorSystem.addAnchorPoint(new BABYLON.Vector3(0, 0, -1), model);
+                        }
+                    });
                 });
                 
                 return scene;
