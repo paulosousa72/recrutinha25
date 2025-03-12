@@ -43,11 +43,11 @@ v40
             console.log("Tentando carregar o modelo...");
             let character;
             try {
-                const result = await BABYLON.SceneLoader.ImportMeshAsync("", "https://models.babylonjs.com/", "Box.glb", scene);
+                const result = await BABYLON.SceneLoader.ImportMeshAsync("", "./", "boneco.glb", scene);
                 character = result.meshes[0];
-                character.scaling = new BABYLON.Vector3(1, 1, 1); // Ajuste de escala para o cubo
+                character.scaling = new BABYLON.Vector3(0.1, 0.1, 0.1); // Ajuste de escala inicial
                 character.position = new BABYLON.Vector3(0, 0, 0);
-                console.log("Modelo carregado com sucesso!");
+                console.log("Modelo boneco.glb carregado com sucesso!");
             } catch (error) {
                 console.error("Erro ao carregar o modelo:", error.message);
                 alert("Erro ao carregar o modelo: " + error.message);
