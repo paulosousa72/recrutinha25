@@ -1,107 +1,14 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>AR com Babylon.js - Depuração</title>
-    <style>
-        body { margin: 0; overflow: hidden; }
-        canvas { width: 100%; height: 100%; }
-        #startARButton {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            padding: 15px 30px;
-            font-size: 18px;
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            z-index: 1000;
-        }
-        #startARButton:hover {
-            background-color: #45a049;
-        }
-    </style>
-    <script src="https://cdn.babylonjs.com/babylon.js"></script>
-    <script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.min.js"></script>
+    <title>Meu Boneco em Realidade Aumentada</title>
+    <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/aframe-xr@3.3.0/dist/aframe-xr.min.js"></script>
 </head>
 <body>
-    <canvas id="renderCanvas"></canvas>
-    <button id="startARButton">Iniciar AR</button>
-    <script>
-        const canvas = document.getElementById("renderCanvas");
-        const engine = new BABYLON.Engine(canvas, true);
-
-        const createScene = async function () {
-            const scene = new BABYLON.Scene(engine);
-            const camera = new BABYLON.FreeCamera("camera1", new BABYLON.Vector3(0, 1, -5), scene);
-            camera.setTarget(BABYLON.Vector3.Zero());
-            const light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
-
-            console.log("Tentando carregar o modelo...");
-            let character;
-            try {
-                const result = await BABYLON.SceneLoader.ImportMeshAsync("", "./", "anime.glb", scene);
-                character = result.meshes[0];
-                character.scaling = new BABYLON.Vector3(0.1, 0.1, 0.1); // Ajuste de escala inicial (pode modificar)
-                character.position = new BABYLON.Vector3(0, 0, 0);
-                console.log("Modelo anime.glb carregado com sucesso!");
-            } catch (error) {
-                console.error("Erro ao carregar o modelo:", error.message);
-                alert("Erro ao carregar o modelo: " + error.message);
-            }
-
-            console.log("Configurando WebXR...");
-            const xr = await scene.createDefaultXRExperienceAsync({
-                floorMeshes: [],
-                disableDefaultUI: true // Desativa o botão padrão do Babylon.js
-            });
-
-            if (!xr.baseExperience) {
-                alert("WebXR não é suportado neste dispositivo/navegador.");
-                console.log("WebXR não suportado.");
-                return scene;
-            }
-
-            xr.baseExperience.featuresManager.enableFeature(BABYLON.WebXRHitTest, "latest", {
-                onHitTestResultObservable: (results) => {
-                    if (results.length > 0) {
-                        const hit = results[0];
-                        character.position = hit.position;
-                        console.log("Superfície detectada, posicionando modelo em:", hit.position);
-                    } else {
-                        console.log("Nenhuma superfície detectada ainda...");
-                    }
-                }
-            });
-
-            // Botão personalizado para iniciar AR
-            const startARButton = document.getElementById("startARButton");
-            startARButton.addEventListener("click", async () => {
-                console.log("Botão clicado, tentando entrar no modo AR...");
-                try {
-                    await xr.baseExperience.enterXRAsync("immersive-ar", "local-floor");
-                    console.log("Entrou no modo AR com sucesso!");
-                    startARButton.style.display = "none"; // Esconde o botão após entrar no AR
-                } catch (err) {
-                    console.error("Erro ao entrar no AR:", err.message);
-                    alert("Erro ao entrar no AR: " + err.message);
-                }
-            });
-
-            return scene;
-        };
-
-        createScene().then(scene => {
-            engine.runRenderLoop(() => {
-                scene.render();
-            });
-        });
-
-        window.addEventListener("resize", () => {
-            engine.resize();
-        });
-    </script>
+    <a-scene ar js-plane-detection="enabled: true; type: horizontal">
+        <a-entity gltf-model="url(boneco.glb)" scale="0.5 0.5 0.5" ar-placement></a-entity>
+        <a-entity camera look-controls wasd-controls></a-entity>
+    </a-scene>
 </body>
 </html>
