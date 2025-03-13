@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Meu Boneco em Realidade Aumentada</title>
+    <title>Meu Boneco em Realidade Aumentada 1</title>
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/aframe-xr@3.3.0/dist/aframe-xr.min.js"></script>
 </head>
 <body>
-    <a-scene ar js-plane-detection="enabled: true; type: horizontal">
+    <a-scene ar ar-mode="immersive-ar" js-plane-detection="enabled: true; type: horizontal">
         <a-entity gltf-model="boneco.glb" scale="0.5 0.5 0.5" ar-placement></a-entity>
         <a-entity camera look-controls wasd-controls></a-entity>
     </a-scene>
