@@ -1,4 +1,4 @@
-v40
+v5
 <!DOCTYPE html>
 <html>
 <head>
@@ -43,11 +43,11 @@ v40
             console.log("Tentando carregar o modelo...");
             let character;
             try {
-                const result = await BABYLON.SceneLoader.ImportMeshAsync("", "./", "boneco.glb", scene);
+                const result = await BABYLON.SceneLoader.ImportMeshAsync("", "./", "anime.glb", scene);
                 character = result.meshes[0];
-                character.scaling = new BABYLON.Vector3(0.1, 0.1, 0.1); // Ajuste de escala inicial
+                character.scaling = new BABYLON.Vector3(0.1, 0.1, 0.1); // Ajuste de escala inicial (pode modificar)
                 character.position = new BABYLON.Vector3(0, 0, 0);
-                console.log("Modelo boneco.glb carregado com sucesso!");
+                console.log("Modelo anime.glb carregado com sucesso!");
             } catch (error) {
                 console.error("Erro ao carregar o modelo:", error.message);
                 alert("Erro ao carregar o modelo: " + error.message);
