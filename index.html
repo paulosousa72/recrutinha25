@@ -1,139 +1,38 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>AR com Babylon.js - Remover Planos</title>
-    <style>
-        body { margin: 0; overflow: hidden; }
-        canvas { width: 100%; height: 100%; }
-        #startARButton {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            padding: 15px 30px;
-            font-size: 18px;
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            z-index: 1000;
-        }
-        #startARButton:hover {
-            background-color: #45a049;
-        }
-        #versionLabel {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            color: white;
-            font-family: Arial, sans-serif;
-            font-size: 16px;
-            z-index: 1000;
-            background-color: rgba(0, 0, 0, 0.5);
-            padding: 5px 10px;
-            border-radius: 5px;
-        }
-    </style>
-    <script src="https://cdn.babylonjs.com/babylon.js"></script>
-    <script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.min.js"></script>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+    <title>Augmented Reality with X3DOM and JSARToolKit</title>
+    <script type='text/javascript' src='https://www.x3dom.org/download/x3dom.js'> </script>
+    <script type="text/javascript" src="JSARToolKit.js"></script>
+    <script src="script.js"></script>
+    <link rel='stylesheet' type='text/css' href='https://www.x3dom.org/download/x3dom.css'/>
+    <link rel="stylesheet" href="mystyle.css"/>
 </head>
 <body>
-    <canvas id="renderCanvas"></canvas>
-    <button id="startARButton">Iniciar AR</button>
-    <div id="versionLabel">Versão 1.1</div>
-    <script>
-        const canvas = document.getElementById("renderCanvas");
-        const engine = new BABYLON.Engine(canvas, true);
+    <div class="ar">
+        <canvas id="bgnd" width="640px" height="480px"></canvas>
+    </div>
 
-        const createScene = async function () {
-            const scene = new BABYLON.Scene(engine);
-            const camera = new BABYLON.FreeCamera("camera1", new BABYLON.Vector3(0, 1, -5), scene);
-            camera.setTarget(BABYLON.Vector3.Zero());
+    <div id='container'>
+        <X3D id="x3d" showStat='true' showLog='false' width="640px" height="480px">
+            <Scene>
+                <Viewfrustum id="vf"></Viewfrustum>
 
-            // Luz básica
-            const light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
-            light.intensity = 1.0;
-
-            console.log("Tentando carregar o modelo...");
-            let character;
-            try {
-                const result = await BABYLON.SceneLoader.ImportMeshAsync("", "./", "boneco.glb", scene);
-                character = result.meshes[0];
-                character.scaling = new BABYLON.Vector3(0.5, 0.5, 0.5); // Escala ajustada
-                character.position = new BABYLON.Vector3(0, 0, 0);
-                character.rotation = new BABYLON.Vector3(0, Math.PI, 0); // Correção de rotação
-
-                // Remove qualquer mesh indesejado antes do AR
-                scene.meshes.forEach(mesh => {
-                    if (mesh !== character && !mesh.name.includes("light")) {
-                        mesh.setEnabled(false); // Desativa meshes que não são o modelo
-                    }
-                });
-                console.log("Modelo anime.glb carregado com sucesso!");
-            } catch (error) {
-                console.error("Erro ao carregar o modelo:", error.message);
-                alert("Erro ao carregar o modelo: " + error.message);
-            }
-
-            console.log("Configurando WebXR...");
-            const xr = await scene.createDefaultXRExperienceAsync({
-                floorMeshes: [],
-                disableDefaultUI: true // Desativa o botão padrão
-            });
-
-            if (!xr.baseExperience) {
-                alert("WebXR não é suportado neste dispositivo/navegador.");
-                console.log("WebXR não suportado.");
-                return scene;
-            }
-
-            // Configuração do HitTest sem feedback visual
-            const hitTestFeature = xr.baseExperience.featuresManager.enableFeature(BABYLON.WebXRHitTest, "latest", {
-                onHitTestResultObservable: (results) => {
-                    if (results.length > 0) {
-                        const hit = results[0];
-                        character.position = hit.position;
-                        console.log("Superfície detectada, posicionando modelo em:", hit.position);
-
-                        // Remove planos visuais no AR
-                        scene.meshes.forEach(mesh => {
-                            if (mesh !== character && !mesh.name.includes("light") && mesh.name.includes("hitTestVisual")) {
-                                mesh.setEnabled(false);
-                            }
-                        });
-                    } else {
-                        console.log("Nenhuma superfície detectada ainda...");
-                    }
-                },
-                disableVisualFeedback: true // Garante que os planos não sejam exibidos
-            });
-
-            const startARButton = document.getElementById("startARButton");
-            startARButton.addEventListener("click", async () => {
-                console.log("Botão clicado, tentando entrar no modo AR...");
-                try {
-                    await xr.baseExperience.enterXRAsync("immersive-ar", "local-floor");
-                    console.log("Entrou no modo AR com sucesso!");
-                    startARButton.style.display = "none"; // Esconde o botão
-                } catch (err) {
-                    console.error("Erro ao entrar no AR:", err.message);
-                    alert("Erro ao entrar no AR: " + err.message);
-                }
-            });
-
-            return scene;
-        };
-
-        createScene().then(scene => {
-            engine.runRenderLoop(() => {
-                scene.render();
-            });
-        });
-
-        window.addEventListener("resize", () => {
-            engine.resize();
-        });
-    </script>
+                <MatrixTransform id="root">
+                    <Transform rotation="0 1 0 3.14159265359">
+                            <transform id="planet" translation="0 0 0.2">
+                                <shape id="earth">
+                                    <appearance>
+                                        <material diffuseColor="0.5 1 0"></material>
+                                    </appearance>
+                                    <box size="60 60 60"></box>
+                                </shape>
+                            </transform>
+                    </Transform>
+                </MatrixTransform>
+            </Scene>
+        </X3D>
+    </div>
 </body>
 </html>
