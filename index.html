@@ -17,12 +17,23 @@
         id="boneco"
         gltf-model="url(./boneco.glb)"
         scale="0.5 0.5 0.5"
-        position="0 0 0"
+        position="0 0 -2"
         class="cantap">
       </a-entity>
 
+      <!-- Texto para controle de versão -->
+      <a-text
+        value="Versão 1.0 - Toque no chão para posicionar o boneco"
+        color="white"
+        position="0 0.5 -1"
+        align="center"
+        width="2"
+        anchor="center"
+        baseline="center">
+      </a-text>
+
       <!-- Câmera -->
-      <a-camera></a-camera>
+      <a-camera fov="60" position="0 1.6 0"></a-camera>
     </a-scene>
 
     <script>
@@ -31,14 +42,6 @@
           const sceneEl = this.el.sceneEl;
           const boneco = document.getElementById('boneco');
 
-          // Adiciona um plano invisível para referência
-          const ground = document.createElement('a-plane');
-          ground.setAttribute('rotation', '-90 0 0');
-          ground.setAttribute('width', '10');
-          ground.setAttribute('height', '10');
-          ground.setAttribute('material', 'opacity: 0;');
-          sceneEl.appendChild(ground);
-
           // Listener para toque na tela
           sceneEl.addEventListener('click', (event) => {
             if (sceneEl.is('ar-mode')) {
@@ -46,7 +49,7 @@
               if (hitTestResults.length > 0) {
                 const pose = hitTestResults[0].getPose(sceneEl.renderer.xr.getReferenceSpace());
                 const position = pose.transform.position;
-                boneco.setAttribute('position', `${position.x} ${position.y} ${position.z}`);
+                boneco.setAttribute('position', `${position.x} ${position.y} ${position.z - 2}`);
               }
             }
           });
