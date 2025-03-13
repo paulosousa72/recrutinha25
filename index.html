@@ -59,48 +59,6 @@
             const modelTransform = document.getElementById("modelTransform");
             const startARButton = document.getElementById("startARButton");
 
-            // Configura WebXR para AR
-            startARButton.addEventListener("click", async () => {
-                console.log("Botão clicado, tentando entrar no modo AR...");
-                try {
-                    const session = await navigator.xr.requestSession("immersive-ar", {
-                        requiredFeatures: ["local-floor", "hit-test"],
-                        optionalFeatures: ["dom-overlay"]
-                    });
-
-                    x3dElement.runtime.enterXR(session);
-                    startARButton.style.display = "none"; // Esconde o botão
-                    console.log("Entrou no modo AR com sucesso!");
-
-                    // Configura o HitTest para posicionar o modelo
-                    const viewerSpace = await session.requestReferenceSpace("viewer");
-                    const hitTestSource = await session.requestHitTestSource({ space: viewerSpace });
-
-                    session.addEventListener("select", () => {
-                        console.log("Evento de seleção detectado.");
-                    });
-
-                    const frameLoop = (frame) => {
-                        const hitTestResults = frame.getHitTestResults(hitTestSource);
-                        if (hitTestResults.length > 0) {
-                            const hit = hitTestResults[0];
-                            const hitPose = hit.getPose(session.requestReferenceSpace("local-floor"));
-                            if (hitPose) {
-                                const position = hitPose.transform.position;
-                                modelTransform.setAttribute("translation", `${position.x} ${position.y} ${position.z}`);
-                                console.log("Modelo posicionado em:", position.x, position.y, position.z);
-                            }
-                        }
-                        session.requestAnimationFrame(frameLoop);
-                    };
-
-                    session.requestAnimationFrame(frameLoop);
-                } catch (err) {
-                    console.error("Erro ao entrar no AR:", err.message);
-                    alert("Erro ao entrar no AR: " + err.message);
-                }
-            });
-
             // Verifica se o modelo foi carregado
             const model = document.getElementById("model");
             model.addEventListener("load", () => {
@@ -109,6 +67,60 @@
             model.addEventListener("error", (err) => {
                 console.error("Erro ao carregar o modelo:", err);
                 alert("Erro ao carregar o modelo: " + err.detail);
+            });
+
+            // Configura WebXR para AR
+            startARButton.addEventListener("click", async () => {
+                console.log("Botão clicado, tentando entrar no modo AR...");
+                if (!navigator.xr) {
+                    alert("WebXR não é suportado neste navegador.");
+                    console.log("WebXR não suportado.");
+                    return;
+                }
+
+                try {
+                    const session = await navigator.xr.requestSession("immersive-ar", {
+                        requiredFeatures: ["local-floor", "hit-test"],
+                        optionalFeatures: ["dom-overlay"]
+                    });
+
+                    // Configura o espaço de referência
+                    const referenceSpace = await session.requestReferenceSpace("local-floor");
+                    const viewerSpace = await session.requestReferenceSpace("viewer");
+                    const hitTestSource = await session.requestHitTestSource({ space: viewerSpace });
+
+                    // Configura o glTF/X3DOM para renderizar no WebXR
+                    const gl = x3dElement.getContext("webgl");
+                    const xrGlBinding = new XRWebGLBinding(session, gl);
+
+                    const onXRFrame = (time, frame) => {
+                        const session = frame.session;
+                        const glLayer = session.renderState.baseLayer;
+                        gl.bindFramebuffer(gl.FRAMEBUFFER, glLayer.framebuffer);
+
+                        const hitTestResults = frame.getHitTestResults(hitTestSource);
+                        if (hitTestResults.length > 0) {
+                            const hit = hitTestResults[0];
+                            const hitPose = hit.getPose(referenceSpace);
+                            if (hitPose) {
+                                const position = hitPose.transform.position;
+                                modelTransform.setAttribute("translation", `${position.x} ${position.y} ${position.z}`);
+                                console.log("Modelo posicionado em:", position.x, position.y, position.z);
+                            }
+                        }
+
+                        session.requestAnimationFrame(onXRFrame);
+                    };
+
+                    session.addEventListener("end", () => {
+                        startARButton.style.display = "block"; // Mostra o botão novamente se o AR terminar
+                    });
+
+                    session.requestAnimationFrame(onXRFrame);
+                } catch (err) {
+                    console.error("Erro ao entrar no AR:", err.message);
+                    alert("Erro ao entrar no AR: " + err.message);
+                }
             });
         });
     </script>
