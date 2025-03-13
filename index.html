@@ -1,38 +1,116 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
-    <title>Augmented Reality with X3DOM and JSARToolKit</title>
-    <script type='text/javascript' src='https://www.x3dom.org/download/x3dom.js'> </script>
-    <script type="text/javascript" src="JSARToolKit.js"></script>
-    <script src="script.js"></script>
-    <link rel='stylesheet' type='text/css' href='https://www.x3dom.org/download/x3dom.css'/>
-    <link rel="stylesheet" href="mystyle.css"/>
+    <title>AR com X3DOM</title>
+    <style>
+        body { margin: 0; overflow: hidden; }
+        x3d { width: 100vw; height: 100vh; border: none; }
+        #startARButton {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            padding: 15px 30px;
+            font-size: 18px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            z-index: 1000;
+        }
+        #startARButton:hover {
+            background-color: #45a049;
+        }
+        #versionLabel {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: white;
+            font-family: Arial, sans-serif;
+            font-size: 16px;
+            z-index: 1000;
+            background-color: rgba(0, 0, 0, 0.5);
+            padding: 5px 10px;
+            border-radius: 5px;
+        }
+    </style>
+    <script src="https://x3dom.org/download/x3dom.js"></script>
 </head>
 <body>
-    <div class="ar">
-        <canvas id="bgnd" width="640px" height="480px"></canvas>
-    </div>
+    <x3d id="x3dScene">
+        <scene id="scene">
+            <Viewpoint id="viewpoint" position="0 1.6 -5" orientation="0 0 1 0"></Viewpoint>
+            <PointLight id="light" location="0 3 0" intensity="1.0"></PointLight>
+            <Transform id="modelTransform" scale="0.5 0.5 0.5" rotation="0 1 0 3.14159">
+                <Inline id="model" url="./anime.glb"></Inline>
+            </Transform>
+        </scene>
+    </x3d>
+    <button id="startARButton">Iniciar AR</button>
+    <div id="versionLabel">Versão 1.0</div>
 
-    <div id='container'>
-        <X3D id="x3d" showStat='true' showLog='false' width="640px" height="480px">
-            <Scene>
-                <Viewfrustum id="vf"></Viewfrustum>
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            console.log("X3DOM carregado, iniciando configuração...");
 
-                <MatrixTransform id="root">
-                    <Transform rotation="0 1 0 3.14159265359">
-                            <transform id="planet" translation="0 0 0.2">
-                                <shape id="earth">
-                                    <appearance>
-                                        <material diffuseColor="0.5 1 0"></material>
-                                    </appearance>
-                                    <box size="60 60 60"></box>
-                                </shape>
-                            </transform>
-                    </Transform>
-                </MatrixTransform>
-            </Scene>
-        </X3D>
-    </div>
+            const x3dElement = document.getElementById("x3dScene");
+            const scene = document.getElementById("scene");
+            const modelTransform = document.getElementById("modelTransform");
+            const startARButton = document.getElementById("startARButton");
+
+            // Configura WebXR para AR
+            startARButton.addEventListener("click", async () => {
+                console.log("Botão clicado, tentando entrar no modo AR...");
+                try {
+                    const session = await navigator.xr.requestSession("immersive-ar", {
+                        requiredFeatures: ["local-floor", "hit-test"],
+                        optionalFeatures: ["dom-overlay"]
+                    });
+
+                    x3dElement.runtime.enterXR(session);
+                    startARButton.style.display = "none"; // Esconde o botão
+                    console.log("Entrou no modo AR com sucesso!");
+
+                    // Configura o HitTest para posicionar o modelo
+                    const viewerSpace = await session.requestReferenceSpace("viewer");
+                    const hitTestSource = await session.requestHitTestSource({ space: viewerSpace });
+
+                    session.addEventListener("select", () => {
+                        console.log("Evento de seleção detectado.");
+                    });
+
+                    const frameLoop = (frame) => {
+                        const hitTestResults = frame.getHitTestResults(hitTestSource);
+                        if (hitTestResults.length > 0) {
+                            const hit = hitTestResults[0];
+                            const hitPose = hit.getPose(session.requestReferenceSpace("local-floor"));
+                            if (hitPose) {
+                                const position = hitPose.transform.position;
+                                modelTransform.setAttribute("translation", `${position.x} ${position.y} ${position.z}`);
+                                console.log("Modelo posicionado em:", position.x, position.y, position.z);
+                            }
+                        }
+                        session.requestAnimationFrame(frameLoop);
+                    };
+
+                    session.requestAnimationFrame(frameLoop);
+                } catch (err) {
+                    console.error("Erro ao entrar no AR:", err.message);
+                    alert("Erro ao entrar no AR: " + err.message);
+                }
+            });
+
+            // Verifica se o modelo foi carregado
+            const model = document.getElementById("model");
+            model.addEventListener("load", () => {
+                console.log("Modelo anime.glb carregado com sucesso!");
+            });
+            model.addEventListener("error", (err) => {
+                console.error("Erro ao carregar o modelo:", err);
+                alert("Erro ao carregar o modelo: " + err.detail);
+            });
+        });
+    </script>
 </body>
 </html>
