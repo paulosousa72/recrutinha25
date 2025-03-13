@@ -63,6 +63,13 @@
                 character.scaling = new BABYLON.Vector3(0.5, 0.5, 0.5); // Escala ajustada
                 character.position = new BABYLON.Vector3(0, 0, 0);
                 character.rotation = new BABYLON.Vector3(0, Math.PI, 0); // Correção de rotação
+
+                // Remove qualquer mesh indesejado antes do AR
+                scene.meshes.forEach(mesh => {
+                    if (mesh !== character && !mesh.name.includes("light")) {
+                        mesh.setEnabled(false); // Desativa meshes que não são o modelo
+                    }
+                });
                 console.log("Modelo anime.glb carregado com sucesso!");
             } catch (error) {
                 console.error("Erro ao carregar o modelo:", error.message);
@@ -88,23 +95,19 @@
                         const hit = results[0];
                         character.position = hit.position;
                         console.log("Superfície detectada, posicionando modelo em:", hit.position);
+
+                        // Remove planos visuais no AR
+                        scene.meshes.forEach(mesh => {
+                            if (mesh !== character && !mesh.name.includes("light") && mesh.name.includes("hitTestVisual")) {
+                                mesh.setEnabled(false);
+                            }
+                        });
                     } else {
                         console.log("Nenhuma superfície detectada ainda...");
                     }
                 },
                 disableVisualFeedback: true // Garante que os planos não sejam exibidos
             });
-
-            // Força a remoção de qualquer feedback visual residual
-            if (hitTestFeature) {
-                hitTestFeature.onHitTestResultObservable.add(() => {
-                    scene.meshes.forEach(mesh => {
-                        if (mesh.name.includes("hitTestVisual")) {
-                            mesh.setEnabled(false); // Desativa meshes de feedback visual
-                        }
-                    });
-                });
-            }
 
             const startARButton = document.getElementById("startARButton");
             startARButton.addEventListener("click", async () => {
