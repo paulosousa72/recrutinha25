@@ -3,11 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Experiência de AR com Boneco V1.1</title>
+    <title>Visualizador de Boneco em AR</title>
+    <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
+    <style>
+        model-viewer {
+            width: 100%;
+            height: 400px;
+        }
+    </style>
 </head>
 <body>
-    <h1>Veja o Boneco em Realidade Aumentada! V1.0</h1>
-    <p>Clique no link abaixo para visualizar o boneco em AR:</p>
-    <a href="https://arvr.google.com/scene-viewer?file=https://static.wixstatic.com/3d/c0b39d_1fea3e09341947c48101c74845c97104.glb">Ver Boneco em AR</a>
+    <h1>Veja o Boneco em 3D e AR!</h1>
+    <model-viewer 
+        id="boneco" 
+        src="https://static.wixstatic.com/3d/c0b39d_1fea3e09341947c48101c74845c97104.glb" 
+        ar 
+        ar-modes="webxr scene-viewer quick-look" 
+        camera-controls 
+        alt="Um boneco 3D">
+    </model-viewer>
+    <button onclick="document.getElementById('boneco').activateAR()">Ver em AR</button>
 </body>
 </html>
