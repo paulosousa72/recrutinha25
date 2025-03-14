@@ -25,22 +25,25 @@
         alt="Um boneco 3D">
     </model-viewer>
     <button onclick="document.getElementById('boneco').activateAR()">Ver em AR</button>
-    <button onclick="capturePhoto()">Tirar Foto</button>
+    <button id="captureButton" onclick="capturePhoto()">Tirar Foto</button>
 
     <script>
+        const modelViewer = document.getElementById('boneco');
+        const captureButton = document.getElementById('captureButton');
+
+        // Monitora mudanças no estado do AR
+        modelViewer.addEventListener('ar-status', (event) => {
+            const arStatus = event.detail.status;
+            if (arStatus === 'session-started') {
+                captureButton.style.display = 'block'; // Mostra o botão no AR
+            } else {
+                captureButton.style.display = 'none'; // Esconde o botão fora do AR
+            }
+        });
+
         function capturePhoto() {
-            const modelViewer = document.getElementById('boneco');
-            modelViewer.toBlob({ mimeType: 'image/png', quality: 1.0 }).then(blob => {
-                const url = URL.createObjectURL(blob);
-                const link = document.createElement('a');
-                link.href = url;
-                link.download = 'foto_modelo.png';
-                link.click();
-                URL.revokeObjectURL(url); // Libera a memória
-            }).catch(error => {
-                console.error('Erro ao capturar foto:', error);
-                alert('Não foi possível tirar a foto. Verifique o console para mais detalhes.');
-            });
+            alert('No modo AR, use a função de captura de tela do seu dispositivo.');
+            // Nota: Captura direta do WebXR não é possível aqui, então orientamos o usuário.
         }
     </script>
 </body>
