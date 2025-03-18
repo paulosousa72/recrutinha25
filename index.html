@@ -3,78 +3,54 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RECRUTINHA 25 ANOS</title>
+    <title>Visualizador de Boneco em AR</title>
     <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
     <style>
         model-viewer {
             width: 100%;
             height: 400px;
         }
-        #captureButton {
-            display: none; /* Escondido por padrão */
+        h1 {
+            text-align: center;
+            font-size: 8vw;
+            padding: 0 20px;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+        }
+        body::before {
+            content: "";
             position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url('background.jpg');
+            background-size: cover;
+            background-position: center;
+            opacity: 0.5;
+            z-index: -1;
+        }
+        /* Centralizar o botão "VER EM AR" */
+        button {
+            display: block;
+            margin: 20px auto;
             padding: 10px 20px;
-            background-color: #007bff;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            z-index: 1000; /* Garante que o botão fique sobreposto */
+            font-size: 16px;
         }
     </style>
 </head>
 <body>
-    <h1>RECRUTINHA 25 ANOS v2</h1>
+    <h1>RECRUTINHA 25 ANOS v3</h1>
     <model-viewer 
         id="boneco" 
         src="sonic.glb" 
         ar 
         ar-modes="webxr scene-viewer quick-look" 
-        ar-placement="floor" 
-        camera-target="0m 0m 0m" 
-        scale="2 2 2" 
-        camera-controls 
-        alt="Modelo 3D">
+        ar-placement="floor"
+        scale="2 2 2"
+        camera-controls
+        alt="Um boneco 3D">
     </model-viewer>
-    <button id="arButton">Ver em AR</button>
-    <button id="captureButton" onclick="capturePhoto()">Tirar Foto</button>
-
-    <script>
-        const modelViewer = document.getElementById('boneco');
-        const arButton = document.getElementById('arButton');
-        const captureButton = document.getElementById('captureButton');
-
-        // Ativa o modo AR
-        arButton.addEventListener('click', () => {
-            modelViewer.activateAR();
-        });
-
-        // Monitora o estado do AR com o evento ar-status
-        modelViewer.addEventListener('ar-status', (event) => {
-            const arStatus = event.detail.status;
-            if (arStatus === 'session-started') {
-                captureButton.style.display = 'block'; // Mostra o botão no AR
-            } else {
-                captureButton.style.display = 'none'; // Esconde fora do AR
-            }
-        });
-
-        // Verificação periódica para garantir que o botão apareça
-        setInterval(() => {
-            if (modelViewer.arStatus === 'session-started') {
-                captureButton.style.display = 'block';
-            } else {
-                captureButton.style.display = 'none';
-            }
-        }, 500); // Verifica a cada 500ms
-
-        // Função para orientar o usuário a tirar uma foto
-        function capturePhoto() {
-            alert('Para tirar uma foto, use a captura de tela do seu dispositivo (ex.: botão de volume + power).');
-        }
-    </script>
+    <button onclick="document.getElementById('boneco').activateAR()">Ver em AR</button>
 </body>
 </html>
