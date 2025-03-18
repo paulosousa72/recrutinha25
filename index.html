@@ -27,7 +27,7 @@
     </style>
 </head>
 <body>
-    <h1>RECRUTINHA 25 ANOS v1</h1>
+    <h1>RECRUTINHA 25 ANOS v2</h1>
     <model-viewer 
         id="boneco" 
         src="sonic.glb" 
@@ -47,25 +47,33 @@
         const arButton = document.getElementById('arButton');
         const captureButton = document.getElementById('captureButton');
 
-        // Ativa o AR e mostra o botão "Tirar Foto"
+        // Ativa o modo AR
         arButton.addEventListener('click', () => {
             modelViewer.activateAR();
-            // Exibe o botão após um pequeno atraso para garantir que o AR esteja ativo
-            setTimeout(() => {
-                captureButton.style.display = 'block';
-            }, 1000); // Atraso de 1 segundo
         });
 
-        // Monitora o estado do AR para esconder o botão quando o AR é encerrado
+        // Monitora o estado do AR com o evento ar-status
         modelViewer.addEventListener('ar-status', (event) => {
             const arStatus = event.detail.status;
-            if (arStatus !== 'session-started') {
-                captureButton.style.display = 'none';
+            if (arStatus === 'session-started') {
+                captureButton.style.display = 'block'; // Mostra o botão no AR
+            } else {
+                captureButton.style.display = 'none'; // Esconde fora do AR
             }
         });
 
+        // Verificação periódica para garantir que o botão apareça
+        setInterval(() => {
+            if (modelViewer.arStatus === 'session-started') {
+                captureButton.style.display = 'block';
+            } else {
+                captureButton.style.display = 'none';
+            }
+        }, 500); // Verifica a cada 500ms
+
+        // Função para orientar o usuário a tirar uma foto
         function capturePhoto() {
-            alert('Para tirar uma foto, use a função de captura de tela do seu dispositivo.');
+            alert('Para tirar uma foto, use a captura de tela do seu dispositivo (ex.: botão de volume + power).');
         }
     </script>
 </body>
