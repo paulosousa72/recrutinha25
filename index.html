@@ -18,10 +18,10 @@
             text-overflow: ellipsis;
         }
         hr {
+            display: block;
             border: none;
-            height: 2px;
-            background-color: olive;
-            margin: 10px 0;
+            border-top: 2px solid olive; /* Corrigido */
+            margin: 20px 0;
         }
         body::before {
             content: "";
@@ -47,6 +47,7 @@
 </head>
 <body>
     <h1>RECRUTINHA 25 ANOS v3</h1>
+    <hr> <!-- Aqui a linha aparecerá corretamente -->
     <model-viewer 
         id="boneco" 
         src="sonic.glb" 
