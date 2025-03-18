@@ -39,20 +39,28 @@
         camera-controls 
         alt="Modelo 3D">
     </model-viewer>
-    <button onclick="document.getElementById('boneco').activateAR()">Ver em AR</button>
+    <button id="arButton">Ver em AR</button>
     <button id="captureButton" onclick="capturePhoto()">Tirar Foto</button>
 
     <script>
         const modelViewer = document.getElementById('boneco');
+        const arButton = document.getElementById('arButton');
         const captureButton = document.getElementById('captureButton');
 
-        // Monitora o estado do AR
+        // Ativa o AR e mostra o botão "Tirar Foto"
+        arButton.addEventListener('click', () => {
+            modelViewer.activateAR();
+            // Exibe o botão após um pequeno atraso para garantir que o AR esteja ativo
+            setTimeout(() => {
+                captureButton.style.display = 'block';
+            }, 1000); // Atraso de 1 segundo
+        });
+
+        // Monitora o estado do AR para esconder o botão quando o AR é encerrado
         modelViewer.addEventListener('ar-status', (event) => {
             const arStatus = event.detail.status;
-            if (arStatus === 'session-started') {
-                captureButton.style.display = 'block'; // Mostra o botão no modo AR
-            } else {
-                captureButton.style.display = 'none'; // Esconde o botão fora do AR
+            if (arStatus !== 'session-started') {
+                captureButton.style.display = 'none';
             }
         });
 
