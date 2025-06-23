@@ -12,15 +12,19 @@
         }
         h1 {
             text-align: center;
-            font-size: 8vw;
-            padding: 0 20px;
-            white-space: nowrap;
-            text-overflow: ellipsis;
+            padding: 10px 20px; /* Ajuste o padding conforme necessário para a logo */
+            /* As propriedades originais font-size, white-space, text-overflow não são tão relevantes para uma imagem, mas podem ser mantidas ou removidas. */
+        }
+        h1 img { /* Estilos para a imagem da logo dentro do h1 */
+            max-height: 80px;  /* <<< AJUSTE ESTE VALOR para o tamanho desejado da logo (ex: 10vw, 60px, etc.) */
+            width: auto;       /* Mantém a proporção da imagem */
+            max-width: 100%;   /* Garante que a imagem não ultrapasse a largura do h1 */
+            vertical-align: middle;
         }
         hr {
             display: block;
             border: none;
-            border-top: 2px solid olive; /* Corrigido */
+            border-top: 2px solid olive;
             margin: 20px 0;
         }
         body::before {
@@ -36,7 +40,6 @@
             opacity: 0.2;
             z-index: -1;
         }
-        /* Centralizar o botão "VER EM AR" */
         button {
             display: block;
             margin: 20px auto;
@@ -46,17 +49,19 @@
     </style>
 </head>
 <body>
-    <h1>RECRUTINHA 25 ANOS v5</h1>
-    <hr> <!-- Aqui a linha aparecerá corretamente -->
-    <model-viewer 
-        id="boneco" 
-        src="RecrutinhaLoW23Jun2.glb" 
-        ar 
-        ar-modes="webxr scene-viewer quick-look" 
+    <h1>
+        <img src="logo_recrutinha_25_anos.png" alt="Logo Recrutinha 25 Anos"> <!-- LOGO AQUI -->
+    </h1>
+    <hr>
+    <model-viewer
+        id="boneco"
+        src="RecrutinhaLoW23Jun2.glb"
+        ar
+        ar-modes="webxr scene-viewer quick-look"
         ar-placement="floor"
-        scale="0.5 0.5 0.5"
+        scale="1 1 1"
         camera-controls
-        disable-zoom
+        disable-zoom  <!-- Mantendo a alteração anterior de desabilitar o zoom -->
         alt="Um boneco 3D">
     </model-viewer>
     <button onclick="document.getElementById('boneco').activateAR()">VER NO SEU ESPAÇO</button>
