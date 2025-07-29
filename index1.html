@@ -116,7 +116,7 @@
                 <div id="browserModal" class="modal" style="display: flex;">
                     <div class="modal-content">
                         <img src="recrutinha.png" alt="Recrutinha">
-                        <p>Amiguinho, o seu navegador de internet não suporta arquivos 3D. Para usar essa funcionalidade, instale o Google Chrome, o Safari ou o Opera.</p>
+                        <p>Amiguinhos e amiguinhas, o seu navegador de Internet não suporta arquivos 3D. Para usar essa funcionalidade, instale o Chrome, o Safari ou o Opera.</p>
                         <button onclick="window.location.href='https://www.google.com/chrome/'">Baixar Chrome</button>
                         <button onclick="window.location.href='https://www.apple.com/safari/'">Baixar Safari</button>
                         <button onclick="window.location.href='https://www.opera.com/'">Baixar Opera</button>
@@ -133,37 +133,14 @@
     <hr>
     <model-viewer
         id="boneco"
-        src="RecrutinhaAndroid.glb"
+        src="RecrutinhaLoW23Jun2.glb"
         ar
         ar-modes="webxr scene-viewer quick-look"
         ar-placement="floor"
         scale="0.7 0.7 0.7"
         camera-controls
-        disable-zoom
-        loading="eager">
-        <div id="debug" slot="progress-bar" style="display: none;"></div>
+        disable-zoom>
     </model-viewer>
-    <button onclick="startAR()">VER NO SEU ESPAÇO</button>
-    <div id="debug">Carregando...</div>
-    <script>
-        const modelViewer = document.getElementById('boneco');
-        const debugDiv = document.getElementById('debug');
-
-        // Verifica suporte a AR
-        modelViewer.addEventListener('load', () => {
-            debugDiv.innerText = "Modelo carregado! Clique no botão para AR.";
-            console.log("Modelo carregado.");
-        });
-        modelViewer.addEventListener('error', (event) => {
-            debugDiv.innerText = "Erro ao carregar modelo: " + event.detail.message;
-            console.log("Erro ao carregar: " + event.detail.message);
-        });
-
-        function startAR() {
-            debugDiv.innerText = "Iniciando AR...";
-            console.log("Tentando iniciar AR...");
-            modelViewer.activateAR();
-        }
-    </script>
+    <button onclick="document.getElementById('boneco').activateAR()">VER NO SEU ESPAÇO</button>
 </body>
 </html>
