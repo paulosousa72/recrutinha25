@@ -114,14 +114,14 @@
             // Exibe o modal em vez de alert
             document.body.innerHTML += `
                 <div id="browserModal" class="modal" style="display: flex;">
-                    <div class="modal-content">
-                        <img src="recrutinha.png" alt="Recrutinha">
-                        <p>Amiguinhos e amiguinhas, o seu navegador de Internet não suporta arquivos 3D. Para usar essa funcionalidade, instale o Chrome, o Safari ou o Opera.</p>
-                        <button onclick="window.location.href='https://www.google.com/chrome/'">Baixar Chrome</button>
-                        <button onclick="window.location.href='https://www.apple.com/safari/'">Baixar Safari</button>
-                        <button onclick="window.location.href='https://www.opera.com/'">Baixar Opera</button>
-                    </div>
-                        
+                <div class="modal-content">
+                    <img src="recrutinha.png" alt="Recrutinha">
+                    <p>Amiguinhos e amiguinhas, o seu navegador de Internet não suporta arquivos 3D. Para usar essa funcionalidade, instale o Chrome, o Safari ou o Opera.</p>
+                    
+                    <div style="display: flex; gap: 10px; justify-content: center;">
+                        <button onclick="window.location.href='https://www.google.com/chrome/'">Chrome</button>
+                        <button onclick="window.location.href='https://www.apple.com/safari/'">Safari</button>
+                        <button onclick="window.location.href='https://www.opera.com/'">Opera</button>
                     </div>
                 </div>
             `;
