@@ -104,7 +104,6 @@
 </head>
 <body>
     <script>
-        // Script de verificação de navegador (sem alterações)
         const userAgent = navigator.userAgent.toLowerCase();
         const isChrome = /chrome|crios/.test(userAgent) && !/edge|opr\//.test(userAgent);
         const isSafari = /safari/.test(userAgent) && !/chrome|crios/.test(userAgent);
@@ -113,8 +112,60 @@
 
         if (!isChrome && !isSafari && !isOpera || isOperaGX) {
             document.body.innerHTML += `
-                <style> /* ... Estilos do modal de navegador ... */ </style>
-                <div class="modal" style="display: flex;"> <!-- Força a exibição deste modal específico -->
+                <style>
+                    .modal {
+                        position: fixed;
+                        top: 0;
+                        left: 0;
+                        width: 100vw;
+                        height: 100vh;
+                        background: rgba(0, 0, 0, 0.5);
+                        display: flex;
+                        justify-content: center;
+                        align-items: center;
+                        z-index: 9999;
+                    }
+                    .modal-content {
+                        background: white;
+                        padding: 15px;
+                        border-radius: 10px;
+                        width: 80%;
+                        max-width: 300px;
+                        text-align: center;
+                        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+                    }
+                    .modal-content img {
+                        width: 100px;
+                        height: auto;
+                        margin-bottom: 10px;
+                    }
+                    .modal-content p {
+                        font-size: 14px;
+                        margin-bottom: 15px;
+                    }
+                    .modal-buttons {
+                        display: flex;
+                        gap: 8px;
+                        justify-content: center;
+                        flex-wrap: wrap;
+                    }
+                    .modal-buttons button {
+                        /* A LINHA 'flex: 1;' FOI REMOVIDA DAQUI */
+                        padding: 8px 12px; /* Adicionado um pouco mais de padding horizontal para estética */
+                        font-size: 13px;
+                        border: none;
+                        background-color: #1976d2;
+                        color: white;
+                        border-radius: 5px;
+                        cursor: pointer;
+                        transition: background 0.2s;
+                    }
+                    .modal-buttons button:hover {
+                        background-color: #125a9c;
+                    }
+                </style>
+
+                <div class="modal" style="display: flex;">
                     <div class="modal-content">
                         <img src="recrutinha.png" alt="Recrutinha">
                         <p>Amiguinhos, o seu navegador não suporta arquivos 3D.<br>Para ver o Recrutinha em sua casa, instale um dos navegadores abaixo:</p>
