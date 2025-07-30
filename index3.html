@@ -111,7 +111,7 @@
         const isOperaGX = /operagx/.test(userAgent);
 
         if (!isChrome && !isSafari && !isOpera || isOperaGX) {
-            document.body.innerHTML += `
+            document.body.innerHTML = `
                 <style>
                     .modal {
                         position: fixed;
