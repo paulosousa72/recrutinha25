@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visualizador de Boneco em AR</title>
+    <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
+    <style>
+        /* ... Seus estilos CSS permanecem os mesmos ... */
+        model-viewer { width: 100%; height: 400px; }
+        h1 { text-align: center; padding: 10px 20px; }
+        h1 img { max-height: 80px; width: auto; max-width: 100%; vertical-align: middle; }
+        hr { display: block; border: none; border-top: 2px solid olive; margin: 20px 0; }
+        body::before { content: ""; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-image: url('background.jpg'); background-size: cover; background-position: center; opacity: 0.2; z-index: -1; }
+        button { display: block; margin: 20px auto; padding: 10px 20px; font-size: 16px; background-color: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer; transition: background-color 0.2s, transform 0.1s; }
+        button:hover { background-color: #45a049; }
+        button:active { background-color: #3e8e41; transform: translateY(2px); }
+        button:disabled { background-color: #555; cursor: wait; } /* Estilo para o botão desativado */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.5); z-index: 1000; justify-content: center; align-items: center; }
+        .modal-content { background-color: white; padding: 20px; border-radius: 10px; text-align: center; max-width: 80%; max-height: 80%; overflow: auto; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
+        .modal-content img { max-width: 100px; margin-bottom: 10px; }
+        .modal-content p { font-size: 16px; margin-bottom: 20px; }
+        .modal-content button { background-color: #4CAF50; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; }
+        .modal-content button:hover { background-color: #45a049; }
+    </style>
+</head>
+<body>
+    <!-- Script de verificação de navegador (sem alterações) -->
+    <script>
+        // ... seu script de verificação de navegador ...
+    </script>
+    
+    <h1>
+        <img src="logorecrutinha.png" alt="Logo Recrutinha">
+    </h1>
+    <hr>
+    <model-viewer
+        id="boneco"
+        src="RecrutinhaLoW23Jun2.glb"
+        ar
+        ar-modes="webxr scene-viewer quick-look"
+        ar-placement="floor"
+        scale="0.7 0.7 0.7"
+        camera-controls
+        disable-zoom
+        alt="Modelo 3D do Recrutinha">
+    </model-viewer>
+    
+    <!-- PASSO 2: Botão principal chama a nova função com 'event' -->
+    <button onclick="startAR(event)">VER NO SEU ESPAÇO</button>
+
+    <!-- Modal para erro de AR (sem alterações) -->
+    <div id="ar-compatibility-modal" class="modal">
+        <div class="modal-content">
+            <p>Seu celular não é compatível com a Realidade Aumentada.<br>Por favor, tente em outro aparelho.</p>
+            <button onclick="document.getElementById('ar-compatibility-modal').style.display='none'">OK</button>
+        </div>
+    </div>
+
+    <!-- PASSO 1: Script com a lógica de verificação e UI atualizada -->
+    <script>
+        function startAR(event) {
+            const modelViewer = document.getElementById('boneco');
+            const arButton = event.target; // Pega o botão que foi clicado
+            const originalButtonText = arButton.innerHTML;
+
+            const resetButton = () => {
+                arButton.innerHTML = originalButtonText;
+                arButton.disabled = false;
+            };
+
+            arButton.innerHTML = 'Abrindo AR...';
+            arButton.disabled = true;
+
+            modelViewer.activateAR().catch((error) => {
+                console.error("Falha ao iniciar a sessão de AR:", error);
+                resetButton();
+                document.getElementById('ar-compatibility-modal').style.display = 'flex';
+            });
+            
+            modelViewer.addEventListener('ar-session-ended', resetButton, { once: true });
+        }
+    </script>
+</body>
+</html>
