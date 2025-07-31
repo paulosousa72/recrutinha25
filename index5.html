@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visualizador de Boneco em AR</title>
+    <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
+    <style>
+        /* Estilos CSS permanecem os mesmos */
+        body { font-family: sans-serif; margin: 0; }
+        .content-wrapper { }
+        model-viewer { width: 100%; height: 400px; display: block; }
+        h1 { text-align: center; padding: 10px 20px; }
+        h1 img { max-height: 80px; width: auto; max-width: 100%; vertical-align: middle; }
+        hr { display: block; border: none; border-top: 2px solid olive; margin: 20px 0; }
+        body::before { content: ""; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-image: url('background.jpg'); background-size: cover; background-position: center; opacity: 0.2; z-index: -1; }
+        button { display: block; margin: 20px auto; padding: 10px 20px; font-size: 16px; background-color: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer; transition: background-color 0.2s, transform 0.1s; }
+        button:hover { background-color: #45a049; }
+        button:active { background-color: #3e8e41; transform: translateY(2px); }
+        button:disabled { background-color: #555; cursor: wait; }
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.6); z-index: 1000; justify-content: center; align-items: center; }
+        .modal-content { background-color: white; padding: 20px; border-radius: 10px; text-align: center; width: 90%; max-width: 320px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
+        .modal-content img { max-width: 100px; margin-bottom: 15px; }
+        .modal-content p { font-size: 16px; line-height: 1.4; margin-bottom: 20px; color: #333; }
+        .modal-buttons { display: flex; gap: 10px; justify-content: center; }
+        .modal-buttons button { padding: 10px 15px; font-size: 14px; }
+    </style>
+</head>
+<body>
+    <div id="main-content" class="content-wrapper">
+        <h1>
+            <img src="logorecrutinha.png" alt="Logo Recrutinha">
+        </h1>
+        <hr>
+        <model-viewer
+            id="boneco"
+            src="RecrutinhaLoW23Jun2.glb"
+            ar
+            ar-modes="webxr scene-viewer quick-look"
+            ar-placement="floor"
+            scale="0.7 0.7 0.7"
+            camera-controls
+            disable-zoom
+            alt="Modelo 3D do Recrutinha">
+        </model-viewer>
+        
+        <button id="ar-button" onclick="startAR(event)">VER NO SEU ESPAÇO</button>
+    </div>
+
+    <!-- Modal de erro para o navegador (sem alterações) -->
+    <div id="browser-incompatible-modal" class="modal"></div>
+    
+    <!-- PASSO 1: ATUALIZAR O MODAL DE ERRO DE AR -->
+    <!-- O modal de erro de AR agora tem o mesmo layout do modal de navegador -->
+    <div id="ar-incompatible-modal" class="modal">
+        <div class="modal-content">
+            <img src="recrutinha.png" alt="Recrutinha">
+            <p>Que pena, o seu dispositivo não é compatível com Realidade Aumentada.<br>Quem tal tentar em outro aparelho celular?</p>
+            <!-- Este botão OK simplesmente fecha o modal -->
+            <button onclick="this.parentElement.parentElement.style.display='none'">OK</button>
+        </div>
+    </div>
+
+
+    <!-- Script de controle centralizado (sem alterações na lógica) -->
+    <script>
+        function checkBrowserCompatibility() {
+            const userAgent = navigator.userAgent.toLowerCase();
+            const isChrome = /chrome|crios/.test(userAgent) && !/edge|opr\//.test(userAgent);
+            const isSafari = /safari/.test(userAgent) && !/chrome|crios/.test(userAgent);
+            const isOpera = /opr\/|opera/.test(userAgent) && !/operagx/.test(userAgent);
+            return (isChrome || isSafari || isOpera) && !/operagx/.test(userAgent);
+        }
+
+        // PASSO 2: A FUNÇÃO startAR JÁ FAZ O QUE PRECISAMOS
+        // Ela já mostra o modal 'ar-incompatible-modal' em caso de erro.
+        // Como atualizamos o conteúdo do modal, o trabalho aqui já está feito.
+        function startAR(event) {
+            const modelViewer = document.getElementById('boneco');
+            const arButton = event.target;
+            const originalButtonText = arButton.innerHTML;
+
+            const resetButton = () => {
+                arButton.innerHTML = originalButtonText;
+                arButton.disabled = false;
+            };
+
+            arButton.innerHTML = 'Abrindo AR...';
+            arButton.disabled = true;
+
+            modelViewer.activateAR().catch((error) => {
+                console.error("Falha ao iniciar a sessão de AR:", error);
+                resetButton(); // Importante: reseta o botão para o estado original
+                document.getElementById('ar-incompatible-modal').style.display = 'flex';
+            });
+            
+            modelViewer.addEventListener('ar-session-ended', resetButton, { once: true });
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            if (checkBrowserCompatibility()) {
+                // Navegador compatível, não faz nada.
+            } else {
+                // Navegador incompatível.
+                document.getElementById('main-content').style.display = 'none';
+                const browserModal = document.getElementById('browser-incompatible-modal');
+                browserModal.innerHTML = `
+                    <div class="modal-content">
+                        <img src="recrutinha.png" alt="Recrutinha">
+                        <p>Amiguinhos, seu navegador não é compatível.<br>Para ver o Recrutinha em sua casa, use um destes:</p>
+                        <div class="modal-buttons">
+                            <button onclick="window.location.href='https://www.google.com/chrome/'">Chrome</button>
+                            <button onclick="window.location.href='https://www.apple.com/safari/'">Safari</button>
+                            <button onclick="window.location.href='https://www.opera.com/'">Opera</button>
+                        </div>
+                    </div>
+                `;
+                browserModal.style.display = 'flex';
+            }
+        });
+    </script>
+</body>
+</html>
