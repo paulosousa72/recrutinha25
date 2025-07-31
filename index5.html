@@ -20,14 +20,33 @@
         button:active { background-color: #3e8e41; transform: translateY(2px); }
         button:disabled { background-color: #555; cursor: wait; }
         
-        /* PASSO 1: Oculta o botão de AR por padrão */
-        #ar-button {
-            display: none;
+        /* PASSO 1: Estilo para a mensagem de incompatibilidade de AR */
+        .ar-incompatible-message {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #fff;
+            margin: 20px auto;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            width: 90%;
+            max-width: 320px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        .ar-incompatible-message img {
+            max-width: 100px;
+            margin-bottom: 15px;
+        }
+        .ar-incompatible-message p {
+            font-size: 16px;
+            line-height: 1.4;
+            color: #333;
+            margin: 0;
         }
 
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.6); z-index: 1000; justify-content: center; align-items: center; }
         .modal-content { background-color: white; padding: 20px; border-radius: 10px; text-align: center; width: 90%; max-width: 320px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
-        .modal-content img { max-width: 100px; margin-bottom: 15px; }
         .modal-content p { font-size: 16px; line-height: 1.4; margin-bottom: 20px; color: #333; }
         .modal-buttons { display: flex; gap: 10px; justify-content: center; }
         .modal-buttons button { padding: 10px 15px; font-size: 14px; }
@@ -51,20 +70,14 @@
             alt="Modelo 3D do Recrutinha">
         </model-viewer>
         
-        <button id="ar-button" onclick="startAR(event)">VER NO SEU ESPAÇO</button>
+        <!-- PASSO 2: Um contêiner vazio que será preenchido pelo JavaScript -->
+        <div id="ar-ui-placeholder"></div>
+
     </div>
 
     <!-- Modal de erro para o navegador (sem alterações) -->
     <div id="browser-incompatible-modal" class="modal"></div>
     
-    <!-- Este modal agora só será usado para erros inesperados, mas é bom mantê-lo -->
-    <div id="ar-unexpected-error-modal" class="modal">
-        <div class="modal-content">
-            <p>Ocorreu um erro inesperado ao tentar iniciar a Realidade Aumentada.</p>
-            <button onclick="this.parentElement.parentElement.style.display='none'">OK</button>
-        </div>
-    </div>
-
 
     <!-- Script de controle centralizado -->
     <script>
@@ -77,8 +90,8 @@
             return (isChrome || isSafari || isOpera) && !/operagx/.test(userAgent);
         }
 
-        // Esta função agora é mais simples e só é chamada em dispositivos compatíveis
         function startAR(event) {
+            // ... (função sem alterações)
             const modelViewer = document.getElementById('boneco');
             const arButton = event.target;
             const originalButtonText = arButton.innerHTML;
@@ -94,7 +107,6 @@
             modelViewer.activateAR().catch((error) => {
                 console.error("Erro inesperado ao ativar AR:", error);
                 resetButton();
-                document.getElementById('ar-unexpected-error-modal').style.display = 'flex';
             });
             
             modelViewer.addEventListener('ar-session-ended', resetButton, { once: true });
@@ -104,24 +116,33 @@
         // Ponto de entrada principal
         document.addEventListener('DOMContentLoaded', () => {
             if (checkBrowserCompatibility()) {
-                // Navegador é compatível. Agora verificamos a compatibilidade de AR.
-                const arButton = document.getElementById('ar-button');
+                // Navegador é compatível.
+                const arPlaceholder = document.getElementById('ar-ui-placeholder');
                 
-                // PASSO 2: Verifica a compatibilidade de AR APENAS quando o componente estiver pronto.
                 customElements.whenDefined('model-viewer').then(() => {
                     const modelViewer = document.getElementById('boneco');
                     
-                    // PASSO 3: Ouve o evento que confirma a disponibilidade de AR
+                    // PASSO 3: Lógica final de verificação de AR
                     modelViewer.addEventListener('ar-status', (event) => {
-                        if(event.detail.status === 'not-presenting') {
-                            // Se a AR ESTÁ disponível, o botão de AR é revelado.
-                            arButton.style.display = 'block';
+                        // 'not-presenting' é o status quando a AR está disponível, mas não ativa.
+                        if (event.detail.status === 'not-presenting') {
+                            // Se a AR é suportada, insere o botão de AR no contêiner.
+                            arPlaceholder.innerHTML = '<button onclick="startAR(event)">VER NO SEU ESPAÇO</button>';
+                        } else {
+                            // Se o status for 'failed' ou qualquer outro, a AR não é suportada.
+                            // Insere a mensagem de incompatibilidade no contêiner.
+                            arPlaceholder.innerHTML = `
+                                <div class="ar-incompatible-message">
+                                    <img src="recrutinha.png" alt="Recrutinha">
+                                    <p>Seu dispositivo não é compatível com Realidade Aumentada.<br>Tente em outro celular mais recente.</p>
+                                </div>
+                            `;
                         }
                     });
                 });
 
             } else {
-                // Navegador NÃO é compatível. Mostra o modal de erro do navegador.
+                // Navegador NÃO é compatível.
                 document.getElementById('main-content').style.display = 'none';
                 const browserModal = document.getElementById('browser-incompatible-modal');
                 browserModal.innerHTML = `
