@@ -6,7 +6,7 @@
     <title>Visualizador de Boneco em AR</title>
     <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
     <style>
-        /* ... outros estilos ... */
+        /* Estilos CSS permanecem os mesmos */
         body { font-family: sans-serif; margin: 0; }
         .content-wrapper { }
         model-viewer { width: 100%; height: 400px; display: block; }
@@ -20,30 +20,9 @@
         button:active { background-color: #3e8e41; transform: translateY(2px); }
         button:disabled { background-color: #555; cursor: wait; }
         
-        /* PASSO 1: Estilo para a mensagem de incompatibilidade de AR */
-        .ar-incompatible-message {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            background-color: #fff;
-            margin: 20px auto;
-            padding: 20px;
-            border-radius: 10px;
-            text-align: center;
-            width: 90%;
-            max-width: 320px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-        }
-        .ar-incompatible-message img {
-            max-width: 100px;
-            margin-bottom: 15px;
-        }
-        .ar-incompatible-message p {
-            font-size: 16px;
-            line-height: 1.4;
-            color: #333;
-            margin: 0;
-        }
+        .ar-incompatible-message { display: flex; flex-direction: column; align-items: center; background-color: #fff; margin: 20px auto; padding: 20px; border-radius: 10px; text-align: center; width: 90%; max-width: 320px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .ar-incompatible-message img { max-width: 100px; margin-bottom: 15px; }
+        .ar-incompatible-message p { font-size: 16px; line-height: 1.4; color: #333; margin: 0; }
 
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.6); z-index: 1000; justify-content: center; align-items: center; }
         .modal-content { background-color: white; padding: 20px; border-radius: 10px; text-align: center; width: 90%; max-width: 320px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
@@ -70,19 +49,16 @@
             alt="Modelo 3D do Recrutinha">
         </model-viewer>
         
-        <!-- PASSO 2: Um contêiner vazio que será preenchido pelo JavaScript -->
         <div id="ar-ui-placeholder"></div>
-
     </div>
 
-    <!-- Modal de erro para o navegador (sem alterações) -->
+    <!-- Modal de erro para o navegador -->
     <div id="browser-incompatible-modal" class="modal"></div>
     
 
     <!-- Script de controle centralizado -->
     <script>
         function checkBrowserCompatibility() {
-            // ... (função sem alterações)
             const userAgent = navigator.userAgent.toLowerCase();
             const isChrome = /chrome|crios/.test(userAgent) && !/edge|opr\//.test(userAgent);
             const isSafari = /safari/.test(userAgent) && !/chrome|crios/.test(userAgent);
@@ -91,24 +67,19 @@
         }
 
         function startAR(event) {
-            // ... (função sem alterações)
             const modelViewer = document.getElementById('boneco');
             const arButton = event.target;
             const originalButtonText = arButton.innerHTML;
-
             const resetButton = () => {
                 arButton.innerHTML = originalButtonText;
                 arButton.disabled = false;
             };
-
             arButton.innerHTML = 'Abrindo AR...';
             arButton.disabled = true;
-
             modelViewer.activateAR().catch((error) => {
                 console.error("Erro inesperado ao ativar AR:", error);
                 resetButton();
             });
-            
             modelViewer.addEventListener('ar-session-ended', resetButton, { once: true });
         }
 
@@ -119,18 +90,18 @@
                 // Navegador é compatível.
                 const arPlaceholder = document.getElementById('ar-ui-placeholder');
                 
+                // Espera o componente <model-viewer> ser totalmente definido.
                 customElements.whenDefined('model-viewer').then(() => {
                     const modelViewer = document.getElementById('boneco');
                     
-                    // PASSO 3: Lógica final de verificação de AR
-                    modelViewer.addEventListener('ar-status', (event) => {
-                        // 'not-presenting' é o status quando a AR está disponível, mas não ativa.
-                        if (event.detail.status === 'not-presenting') {
-                            // Se a AR é suportada, insere o botão de AR no contêiner.
+                    // Espera o modelo 3D ser carregado, pois a capacidade de AR pode depender disso.
+                    modelViewer.addEventListener('load', () => {
+                        // Pergunta diretamente ao componente se ele pode ativar a AR.
+                        if (modelViewer.canActivateAR) {
+                            // Se sim, insere o botão.
                             arPlaceholder.innerHTML = '<button onclick="startAR(event)">VER NO SEU ESPAÇO</button>';
                         } else {
-                            // Se o status for 'failed' ou qualquer outro, a AR não é suportada.
-                            // Insere a mensagem de incompatibilidade no contêiner.
+                            // Se não, insere a mensagem de erro.
                             arPlaceholder.innerHTML = `
                                 <div class="ar-incompatible-message">
                                     <img src="recrutinha.png" alt="Recrutinha">
