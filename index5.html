@@ -50,21 +50,21 @@
     <!-- Modal de erro para o navegador (sem alterações) -->
     <div id="browser-incompatible-modal" class="modal"></div>
     
-    <!-- PASSO 1: ATUALIZAR O MODAL DE ERRO DE AR -->
-    <!-- O modal de erro de AR agora tem o mesmo layout do modal de navegador -->
+    <!-- Modal de erro para AR (sem alterações no HTML) -->
     <div id="ar-incompatible-modal" class="modal">
         <div class="modal-content">
             <img src="recrutinha.png" alt="Recrutinha">
-            <p>Que pena, o seu dispositivo não é compatível com Realidade Aumentada.<br>Quem tal tentar em outro aparelho celular?</p>
-            <!-- Este botão OK simplesmente fecha o modal -->
+            <!-- A mensagem foi ligeiramente ajustada para refletir melhor o problema -->
+            <p>Seu dispositivo não possui os recursos necessários para Realidade Aumentada.<br>Tente em outro celular mais recente.</p>
             <button onclick="this.parentElement.parentElement.style.display='none'">OK</button>
         </div>
     </div>
 
 
-    <!-- Script de controle centralizado (sem alterações na lógica) -->
+    <!-- Script de controle centralizado -->
     <script>
         function checkBrowserCompatibility() {
+            // ... (função sem alterações)
             const userAgent = navigator.userAgent.toLowerCase();
             const isChrome = /chrome|crios/.test(userAgent) && !/edge|opr\//.test(userAgent);
             const isSafari = /safari/.test(userAgent) && !/chrome|crios/.test(userAgent);
@@ -72,34 +72,44 @@
             return (isChrome || isSafari || isOpera) && !/operagx/.test(userAgent);
         }
 
-        // PASSO 2: A FUNÇÃO startAR JÁ FAZ O QUE PRECISAMOS
-        // Ela já mostra o modal 'ar-incompatible-modal' em caso de erro.
-        // Como atualizamos o conteúdo do modal, o trabalho aqui já está feito.
+        // <<< A LÓGICA FOI TOTALMENTE REFEITA AQUI >>>
         function startAR(event) {
             const modelViewer = document.getElementById('boneco');
-            const arButton = event.target;
-            const originalButtonText = arButton.innerHTML;
-
-            const resetButton = () => {
-                arButton.innerHTML = originalButtonText;
-                arButton.disabled = false;
-            };
-
-            arButton.innerHTML = 'Abrindo AR...';
-            arButton.disabled = true;
-
-            modelViewer.activateAR().catch((error) => {
-                console.error("Falha ao iniciar a sessão de AR:", error);
-                resetButton(); // Importante: reseta o botão para o estado original
-                document.getElementById('ar-incompatible-modal').style.display = 'flex';
-            });
             
-            modelViewer.addEventListener('ar-session-ended', resetButton, { once: true });
+            // PASSO 1: VERIFICA A COMPATIBILIDADE ANTES DE TUDO
+            if (ModelViewerElement.isArSupported) {
+                // SE O DISPOSITIVO É COMPATÍVEL, executa a lógica de ativação
+                const arButton = event.target;
+                const originalButtonText = arButton.innerHTML;
+
+                const resetButton = () => {
+                    arButton.innerHTML = originalButtonText;
+                    arButton.disabled = false;
+                };
+
+                arButton.innerHTML = 'Abrindo AR...';
+                arButton.disabled = true;
+
+                // Agora, o .catch() serve para erros inesperados, não para incompatibilidade
+                modelViewer.activateAR().catch((error) => {
+                    console.error("Erro inesperado ao ativar AR:", error);
+                    resetButton();
+                    document.getElementById('ar-incompatible-modal').style.display = 'flex';
+                });
+                
+                modelViewer.addEventListener('ar-session-ended', resetButton, { once: true });
+
+            } else {
+                // SE O DISPOSITIVO NÃO É COMPATÍVEL, mostra o modal diretamente
+                console.log("AR não é suportado, mostrando modal de erro.");
+                document.getElementById('ar-incompatible-modal').style.display = 'flex';
+            }
         }
 
         document.addEventListener('DOMContentLoaded', () => {
+            // ... (lógica de verificação do navegador sem alterações)
             if (checkBrowserCompatibility()) {
-                // Navegador compatível, não faz nada.
+                // Navegador compatível.
             } else {
                 // Navegador incompatível.
                 document.getElementById('main-content').style.display = 'none';
