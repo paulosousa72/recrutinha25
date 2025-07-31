@@ -18,9 +18,8 @@
         button:active { background-color: #3e8e41; transform: translateY(2px); }
         button:disabled { background-color: #555; cursor: wait; }
 
-        /* Estilo para a mensagem de erro */
-        .ar-error-message {
-            display: flex; /* Começa como flex para já estar pronto */
+        .ar-message {
+            display: flex;
             flex-direction: column;
             align-items: center;
             background-color: #fff;
@@ -32,7 +31,7 @@
             max-width: 320px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
         }
-        .ar-error-message p { font-size: 16px; line-height: 1.4; color: #333; margin: 0; }
+        .ar-message p { font-size: 16px; line-height: 1.4; color: #333; margin: 0; }
     </style>
 </head>
 <body>
@@ -52,34 +51,51 @@
         alt="Modelo 3D do Recrutinha">
     </model-viewer>
     
-    <!-- PASSO 1: O contêiner para a UI de AR -->
     <div id="ar-ui-container">
-        <!-- O botão e a mensagem serão inseridos aqui pelo JavaScript -->
+        <!-- O botão ou a mensagem de erro será inserido aqui -->
     </div>
 
     <script>
-        // PASSO 2: A lógica de verificação e criação da UI
-        document.addEventListener('DOMContentLoaded', () => {
+        // Função anônima e auto-executável para evitar poluir o escopo global
+        (async function() {
             const arContainer = document.getElementById('ar-ui-container');
 
-            // Verifica se a API WebXR está disponível no navegador.
-            // Esta é a verificação mais fundamental.
+            // PASSO 1: Verifica se a API WebXR existe
             if (navigator.xr) {
-                // Se a API existir, o dispositivo é potencialmente compatível.
-                // Criamos e inserimos o botão de AR.
-                arContainer.innerHTML = '<button onclick="startAR(event)">VER NO SEU ESPAÇO</button>';
+                try {
+                    // PASSO 2: Pergunta ao navegador se ele REALMENTE suporta AR
+                    const supported = await navigator.xr.isSessionSupported('immersive-ar');
+                    if (supported) {
+                        // Se sim, cria o botão de AR
+                        arContainer.innerHTML = '<button onclick="startAR(event)">VER NO SEU ESPAÇO</button>';
+                    } else {
+                        // Se não (ex: falta Google Play Services), cria a mensagem de erro
+                        arContainer.innerHTML = `
+                            <div class="ar-message">
+                                <p>Não compatível</p>
+                            </div>
+                        `;
+                    }
+                } catch (e) {
+                    // Se a verificação der erro, assume que não é compatível
+                    console.error("Erro ao verificar suporte a AR:", e);
+                    arContainer.innerHTML = `
+                        <div class="ar-message">
+                            <p>Não compatível</p>
+                        </div>
+                    `;
+                }
             } else {
-                // Se a API não existir, o dispositivo é definitivamente incompatível.
-                // Criamos e inserimos a mensagem de erro.
+                // Se a API WebXR nem existir, é definitivamente incompatível
                 arContainer.innerHTML = `
-                    <div class="ar-error-message">
+                    <div class="ar-message">
                         <p>Não compatível</p>
                     </div>
                 `;
             }
-        });
+        })();
 
-        // PASSO 3: A sua função startAR original, que funciona bem em dispositivos compatíveis.
+        // A sua função startAR original, que só será chamada se o botão existir
         function startAR(event) {
             const modelViewer = document.getElementById('boneco');
             const arButton = event.target;
@@ -93,11 +109,9 @@
             arButton.innerHTML = 'Abrindo AR...';
             arButton.disabled = true;
 
-            // Esta chamada agora só acontece se o botão existir, ou seja, em dispositivos compatíveis.
             modelViewer.activateAR().catch((error) => {
                 console.error("Falha ao iniciar a sessão de AR:", error);
                 resetButton();
-                // Como uma segurança extra, podemos mostrar um alerta simples se algo der errado aqui
                 alert("Ocorreu um erro ao tentar iniciar a Realidade Aumentada.");
             });
             
