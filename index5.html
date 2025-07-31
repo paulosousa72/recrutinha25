@@ -55,81 +55,49 @@
     <!-- Modal de erro para o navegador -->
     <div id="browser-incompatible-modal" class="modal"></div>
     
+   <!-- Modal para erro de AR (sem alterações) -->
+    <div id="ar-compatibility-modal" class="modal">
+        <div class="modal-content">
+            <!-- Apenas para deixar a mensagem mais genérica -->
+            <p>Não compatível</p>
+            <button onclick="document.getElementById('ar-compatibility-modal').style.display='none'">OK</button>
+        </div>
+    </div>
 
-    <!-- Script de controle centralizado -->
+    <!-- SUBSTITUA O SCRIPT 'startAR' POR ESTE -->
     <script>
-        function checkBrowserCompatibility() {
-            const userAgent = navigator.userAgent.toLowerCase();
-            const isChrome = /chrome|crios/.test(userAgent) && !/edge|opr\//.test(userAgent);
-            const isSafari = /safari/.test(userAgent) && !/chrome|crios/.test(userAgent);
-            const isOpera = /opr\/|opera/.test(userAgent) && !/operagx/.test(userAgent);
-            return (isChrome || isSafari || isOpera) && !/operagx/.test(userAgent);
-        }
-
         function startAR(event) {
+            // PASSO 1: Verificação Rápida de Compatibilidade
+            // Se 'navigator.xr' não existir, é um sinal claro de que WebXR (e portanto, AR) não é suportado.
+            if (!navigator.xr) {
+                // Se não for compatível, simplesmente mostra o modal e não faz mais nada.
+                console.log("WebXR não suportado. Mostrando modal de erro.");
+                document.getElementById('ar-compatibility-modal').style.display = 'flex';
+                return; // Encerra a função aqui.
+            }
+            
+            // PASSO 2: Se a verificação passar, continua com a lógica original
             const modelViewer = document.getElementById('boneco');
             const arButton = event.target;
             const originalButtonText = arButton.innerHTML;
+
             const resetButton = () => {
                 arButton.innerHTML = originalButtonText;
                 arButton.disabled = false;
             };
+
             arButton.innerHTML = 'Abrindo AR...';
             arButton.disabled = true;
+
+            // O .catch() agora atuará como uma segunda camada de segurança para outros erros.
             modelViewer.activateAR().catch((error) => {
-                console.error("Erro inesperado ao ativar AR:", error);
+                console.error("Falha ao iniciar a sessão de AR:", error);
                 resetButton();
+                document.getElementById('ar-compatibility-modal').style.display = 'flex';
             });
+            
             modelViewer.addEventListener('ar-session-ended', resetButton, { once: true });
         }
-
-
-        // Ponto de entrada principal
-        document.addEventListener('DOMContentLoaded', () => {
-            if (checkBrowserCompatibility()) {
-                // Navegador é compatível.
-                const arPlaceholder = document.getElementById('ar-ui-placeholder');
-                
-                // Espera o componente <model-viewer> ser totalmente definido.
-                customElements.whenDefined('model-viewer').then(() => {
-                    const modelViewer = document.getElementById('boneco');
-                    
-                    // Espera o modelo 3D ser carregado, pois a capacidade de AR pode depender disso.
-                    modelViewer.addEventListener('load', () => {
-                        // Pergunta diretamente ao componente se ele pode ativar a AR.
-                        if (modelViewer.canActivateAR) {
-                            // Se sim, insere o botão.
-                            arPlaceholder.innerHTML = '<button onclick="startAR(event)">VER NO SEU ESPAÇO</button>';
-                        } else {
-                            // Se não, insere a mensagem de erro.
-                            arPlaceholder.innerHTML = `
-                                <div class="ar-incompatible-message">
-                                    <img src="recrutinha.png" alt="Recrutinha">
-                                    <p>Seu dispositivo não é compatível com Realidade Aumentada.<br>Tente em outro celular mais recente.</p>
-                                </div>
-                            `;
-                        }
-                    });
-                });
-
-            } else {
-                // Navegador NÃO é compatível.
-                document.getElementById('main-content').style.display = 'none';
-                const browserModal = document.getElementById('browser-incompatible-modal');
-                browserModal.innerHTML = `
-                    <div class="modal-content">
-                        <img src="recrutinha.png" alt="Recrutinha">
-                        <p>Amiguinhos, seu navegador não é compatível.<br>Para ver o Recrutinha em sua casa, use um destes:</p>
-                        <div class="modal-buttons">
-                            <button onclick="window.location.href='https://www.google.com/chrome/'">Chrome</button>
-                            <button onclick="window.location.href='https://www.apple.com/safari/'">Safari</button>
-                            <button onclick="window.location.href='https://www.opera.com/'">Opera</button>
-                        </div>
-                    </div>
-                `;
-                browserModal.style.display = 'flex';
-            }
-        });
     </script>
 </body>
 </html>
