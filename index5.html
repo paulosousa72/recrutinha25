@@ -6,7 +6,7 @@
     <title>Visualizador de Boneco em AR</title>
     <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
     <style>
-        /* Estilos CSS permanecem os mesmos */
+        /* ... outros estilos ... */
         body { font-family: sans-serif; margin: 0; }
         .content-wrapper { }
         model-viewer { width: 100%; height: 400px; display: block; }
@@ -14,10 +14,17 @@
         h1 img { max-height: 80px; width: auto; max-width: 100%; vertical-align: middle; }
         hr { display: block; border: none; border-top: 2px solid olive; margin: 20px 0; }
         body::before { content: ""; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-image: url('background.jpg'); background-size: cover; background-position: center; opacity: 0.2; z-index: -1; }
+        
         button { display: block; margin: 20px auto; padding: 10px 20px; font-size: 16px; background-color: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer; transition: background-color 0.2s, transform 0.1s; }
         button:hover { background-color: #45a049; }
         button:active { background-color: #3e8e41; transform: translateY(2px); }
         button:disabled { background-color: #555; cursor: wait; }
+        
+        /* PASSO 1: Oculta o botão de AR por padrão */
+        #ar-button {
+            display: none;
+        }
+
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.6); z-index: 1000; justify-content: center; align-items: center; }
         .modal-content { background-color: white; padding: 20px; border-radius: 10px; text-align: center; width: 90%; max-width: 320px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
         .modal-content img { max-width: 100px; margin-bottom: 15px; }
@@ -50,12 +57,10 @@
     <!-- Modal de erro para o navegador (sem alterações) -->
     <div id="browser-incompatible-modal" class="modal"></div>
     
-    <!-- Modal de erro para AR (sem alterações no HTML) -->
-    <div id="ar-incompatible-modal" class="modal">
+    <!-- Este modal agora só será usado para erros inesperados, mas é bom mantê-lo -->
+    <div id="ar-unexpected-error-modal" class="modal">
         <div class="modal-content">
-            <img src="recrutinha.png" alt="Recrutinha">
-            <!-- A mensagem foi ligeiramente ajustada para refletir melhor o problema -->
-            <p>Seu dispositivo não possui os recursos necessários para Realidade Aumentada.<br>Tente em outro celular mais recente.</p>
+            <p>Ocorreu um erro inesperado ao tentar iniciar a Realidade Aumentada.</p>
             <button onclick="this.parentElement.parentElement.style.display='none'">OK</button>
         </div>
     </div>
@@ -72,46 +77,51 @@
             return (isChrome || isSafari || isOpera) && !/operagx/.test(userAgent);
         }
 
-        // <<< A LÓGICA FOI TOTALMENTE REFEITA AQUI >>>
+        // Esta função agora é mais simples e só é chamada em dispositivos compatíveis
         function startAR(event) {
             const modelViewer = document.getElementById('boneco');
+            const arButton = event.target;
+            const originalButtonText = arButton.innerHTML;
+
+            const resetButton = () => {
+                arButton.innerHTML = originalButtonText;
+                arButton.disabled = false;
+            };
+
+            arButton.innerHTML = 'Abrindo AR...';
+            arButton.disabled = true;
+
+            modelViewer.activateAR().catch((error) => {
+                console.error("Erro inesperado ao ativar AR:", error);
+                resetButton();
+                document.getElementById('ar-unexpected-error-modal').style.display = 'flex';
+            });
             
-            // PASSO 1: VERIFICA A COMPATIBILIDADE ANTES DE TUDO
-            if (ModelViewerElement.isArSupported) {
-                // SE O DISPOSITIVO É COMPATÍVEL, executa a lógica de ativação
-                const arButton = event.target;
-                const originalButtonText = arButton.innerHTML;
-
-                const resetButton = () => {
-                    arButton.innerHTML = originalButtonText;
-                    arButton.disabled = false;
-                };
-
-                arButton.innerHTML = 'Abrindo AR...';
-                arButton.disabled = true;
-
-                // Agora, o .catch() serve para erros inesperados, não para incompatibilidade
-                modelViewer.activateAR().catch((error) => {
-                    console.error("Erro inesperado ao ativar AR:", error);
-                    resetButton();
-                    document.getElementById('ar-incompatible-modal').style.display = 'flex';
-                });
-                
-                modelViewer.addEventListener('ar-session-ended', resetButton, { once: true });
-
-            } else {
-                // SE O DISPOSITIVO NÃO É COMPATÍVEL, mostra o modal diretamente
-                console.log("AR não é suportado, mostrando modal de erro.");
-                document.getElementById('ar-incompatible-modal').style.display = 'flex';
-            }
+            modelViewer.addEventListener('ar-session-ended', resetButton, { once: true });
         }
 
+
+        // Ponto de entrada principal
         document.addEventListener('DOMContentLoaded', () => {
-            // ... (lógica de verificação do navegador sem alterações)
             if (checkBrowserCompatibility()) {
-                // Navegador compatível.
+                // Navegador é compatível. Agora verificamos a compatibilidade de AR.
+                const arButton = document.getElementById('ar-button');
+                
+                // PASSO 2: Verifica a compatibilidade de AR APENAS quando o componente estiver pronto.
+                customElements.whenDefined('model-viewer').then(() => {
+                    const modelViewer = document.getElementById('boneco');
+                    
+                    // PASSO 3: Ouve o evento que confirma a disponibilidade de AR
+                    modelViewer.addEventListener('ar-status', (event) => {
+                        if(event.detail.status === 'not-presenting') {
+                            // Se a AR ESTÁ disponível, o botão de AR é revelado.
+                            arButton.style.display = 'block';
+                        }
+                    });
+                });
+
             } else {
-                // Navegador incompatível.
+                // Navegador NÃO é compatível. Mostra o modal de erro do navegador.
                 document.getElementById('main-content').style.display = 'none';
                 const browserModal = document.getElementById('browser-incompatible-modal');
                 browserModal.innerHTML = `
