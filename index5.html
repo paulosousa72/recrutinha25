@@ -6,22 +6,21 @@
     <title>Visualizador de Boneco em AR</title>
     <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
     <style>
-        /* CSS permanece o mesmo, mas com uma adição importante */
+        /* ... Seus estilos CSS ... */
         body { font-family: sans-serif; margin: 0; }
         model-viewer { width: 100%; height: 400px; }
         h1 { text-align: center; padding: 10px 20px; }
         h1 img { max-height: 80px; width: auto; max-width: 100%; vertical-align: middle; }
         hr { display: block; border: none; border-top: 2px solid olive; margin: 20px 0; }
         body::before { content: ""; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-image: url('background.jpg'); background-size: cover; background-position: center; opacity: 0.2; z-index: -1; }
-        
         button { display: block; margin: 20px auto; padding: 10px 20px; font-size: 16px; background-color: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer; transition: background-color 0.2s, transform 0.1s; }
         button:hover { background-color: #45a049; }
         button:active { background-color: #3e8e41; transform: translateY(2px); }
         button:disabled { background-color: #555; cursor: wait; }
 
-        /* Estilo para a mensagem de erro (sem ser modal) */
+        /* Estilo para a mensagem de erro */
         .ar-error-message {
-            display: flex;
+            display: flex; /* Começa como flex para já estar pronto */
             flex-direction: column;
             align-items: center;
             background-color: #fff;
@@ -33,12 +32,7 @@
             max-width: 320px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
         }
-        .ar-error-message p {
-            font-size: 16px;
-            line-height: 1.4;
-            color: #333;
-            margin: 0;
-        }
+        .ar-error-message p { font-size: 16px; line-height: 1.4; color: #333; margin: 0; }
     </style>
 </head>
 <body>
@@ -46,67 +40,69 @@
         <img src="logorecrutinha.png" alt="Logo Recrutinha">
     </h1>
     <hr>
-    
-    <!-- PASSO 1: O atributo 'ar' foi REMOVIDO para impedir o botão padrão -->
     <model-viewer
         id="boneco"
         src="RecrutinhaLoW23Jun2.glb"
+        ar
         ar-modes="webxr scene-viewer quick-look"
         ar-placement="floor"
         scale="0.7 0.7 0.7"
         camera-controls
         disable-zoom
         alt="Modelo 3D do Recrutinha">
-        
-        <!-- PASSO 2: Nosso próprio botão, escondido por padrão -->
-        <button slot="ar-button" id="custom-ar-button" style="display: none;">
-            VER NO SEU ESPAÇO
-        </button>
-        
-        <!-- PASSO 3: Nosso próprio contêiner para a mensagem de erro, também escondido -->
-        <div id="ar-error-placeholder" style="display: none;">
-             <div class="ar-error-message">
-                <p>Não compatível</p>
-            </div>
-        </div>
     </model-viewer>
     
-    <script>
-        const modelViewer = document.getElementById('boneco');
-        const arButton = document.getElementById('custom-ar-button');
-        const arError = document.getElementById('ar-error-placeholder');
+    <!-- PASSO 1: O contêiner para a UI de AR -->
+    <div id="ar-ui-container">
+        <!-- O botão e a mensagem serão inseridos aqui pelo JavaScript -->
+    </div>
 
-        // Espera o componente estar pronto
-        modelViewer.addEventListener('load', () => {
-            // Pergunta diretamente se a AR pode ser ativada
-            if (modelViewer.canActivateAR) {
-                // Se sim, mostra nosso botão personalizado
-                arButton.style.display = 'block';
+    <script>
+        // PASSO 2: A lógica de verificação e criação da UI
+        document.addEventListener('DOMContentLoaded', () => {
+            const arContainer = document.getElementById('ar-ui-container');
+
+            // Verifica se a API WebXR está disponível no navegador.
+            // Esta é a verificação mais fundamental.
+            if (navigator.xr) {
+                // Se a API existir, o dispositivo é potencialmente compatível.
+                // Criamos e inserimos o botão de AR.
+                arContainer.innerHTML = '<button onclick="startAR(event)">VER NO SEU ESPAÇO</button>';
             } else {
-                // Se não, mostra nossa mensagem de erro personalizada
-                arError.style.display = 'block';
+                // Se a API não existir, o dispositivo é definitivamente incompatível.
+                // Criamos e inserimos a mensagem de erro.
+                arContainer.innerHTML = `
+                    <div class="ar-error-message">
+                        <p>Não compatível</p>
+                    </div>
+                `;
             }
         });
 
-        // Lógica para o clique no nosso botão personalizado
-        arButton.addEventListener('click', (event) => {
-            const originalButtonText = arButton.textContent;
+        // PASSO 3: A sua função startAR original, que funciona bem em dispositivos compatíveis.
+        function startAR(event) {
+            const modelViewer = document.getElementById('boneco');
+            const arButton = event.target;
+            const originalButtonText = arButton.innerHTML;
+
             const resetButton = () => {
-                arButton.textContent = originalButtonText;
+                arButton.innerHTML = originalButtonText;
                 arButton.disabled = false;
             };
 
-            arButton.textContent = 'Abrindo AR...';
+            arButton.innerHTML = 'Abrindo AR...';
             arButton.disabled = true;
 
-            // Ativa a AR programaticamente
+            // Esta chamada agora só acontece se o botão existir, ou seja, em dispositivos compatíveis.
             modelViewer.activateAR().catch((error) => {
-                console.error("Erro inesperado ao ativar AR:", error);
+                console.error("Falha ao iniciar a sessão de AR:", error);
                 resetButton();
+                // Como uma segurança extra, podemos mostrar um alerta simples se algo der errado aqui
+                alert("Ocorreu um erro ao tentar iniciar a Realidade Aumentada.");
             });
             
             modelViewer.addEventListener('ar-session-ended', resetButton, { once: true });
-        });
+        }
     </script>
 </body>
 </html>
