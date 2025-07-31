@@ -6,91 +6,107 @@
     <title>Visualizador de Boneco em AR</title>
     <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
     <style>
-        /* ... Seus estilos CSS permanecem os mesmos ... */
+        /* CSS permanece o mesmo, mas com uma adição importante */
+        body { font-family: sans-serif; margin: 0; }
         model-viewer { width: 100%; height: 400px; }
         h1 { text-align: center; padding: 10px 20px; }
         h1 img { max-height: 80px; width: auto; max-width: 100%; vertical-align: middle; }
         hr { display: block; border: none; border-top: 2px solid olive; margin: 20px 0; }
         body::before { content: ""; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-image: url('background.jpg'); background-size: cover; background-position: center; opacity: 0.2; z-index: -1; }
+        
         button { display: block; margin: 20px auto; padding: 10px 20px; font-size: 16px; background-color: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer; transition: background-color 0.2s, transform 0.1s; }
         button:hover { background-color: #45a049; }
         button:active { background-color: #3e8e41; transform: translateY(2px); }
-        button:disabled { background-color: #555; cursor: wait; } /* Estilo para o botão desativado */
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.5); z-index: 1000; justify-content: center; align-items: center; }
-        .modal-content { background-color: white; padding: 20px; border-radius: 10px; text-align: center; max-width: 80%; max-height: 80%; overflow: auto; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
-        .modal-content img { max-width: 100px; margin-bottom: 10px; }
-        .modal-content p { font-size: 16px; margin-bottom: 20px; }
-        .modal-content button { background-color: #4CAF50; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; }
-        .modal-content button:hover { background-color: #45a049; }
+        button:disabled { background-color: #555; cursor: wait; }
+
+        /* Estilo para a mensagem de erro (sem ser modal) */
+        .ar-error-message {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #fff;
+            margin: 20px auto;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            width: 90%;
+            max-width: 320px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        .ar-error-message p {
+            font-size: 16px;
+            line-height: 1.4;
+            color: #333;
+            margin: 0;
+        }
     </style>
 </head>
 <body>
-    <!-- Script de verificação de navegador (sem alterações) -->
-    <script>
-        // ... seu script de verificação de navegador ...
-    </script>
-    
     <h1>
         <img src="logorecrutinha.png" alt="Logo Recrutinha">
     </h1>
     <hr>
+    
+    <!-- PASSO 1: O atributo 'ar' foi REMOVIDO para impedir o botão padrão -->
     <model-viewer
         id="boneco"
         src="RecrutinhaLoW23Jun2.glb"
-        ar
         ar-modes="webxr scene-viewer quick-look"
         ar-placement="floor"
         scale="0.7 0.7 0.7"
         camera-controls
         disable-zoom
         alt="Modelo 3D do Recrutinha">
+        
+        <!-- PASSO 2: Nosso próprio botão, escondido por padrão -->
+        <button slot="ar-button" id="custom-ar-button" style="display: none;">
+            VER NO SEU ESPAÇO
+        </button>
+        
+        <!-- PASSO 3: Nosso próprio contêiner para a mensagem de erro, também escondido -->
+        <div id="ar-error-placeholder" style="display: none;">
+             <div class="ar-error-message">
+                <p>Não compatível</p>
+            </div>
+        </div>
     </model-viewer>
     
-    <!-- PASSO 2: Botão principal chama a nova função com 'event' -->
-    <button onclick="startAR(event)">VER NO SEU ESPAÇO</button>
-
-    <!-- Modal para erro de AR (sem alterações) -->
-    <div id="ar-compatibility-modal" class="modal">
-        <div class="modal-content">
-            <p>Seu celular não é compatível com a Realidade Aumentada.<br>Por favor, tente em outro aparelho.</p>
-            <button onclick="document.getElementById('ar-compatibility-modal').style.display='none'">OK</button>
-        </div>
-    </div>
-
-    <!-- SUBSTITUA O SCRIPT 'startAR' POR ESTE -->
     <script>
-        function startAR(event) {
-            // PASSO 1: Verificação Rápida de Compatibilidade
-            // Se 'navigator.xr' não existir, é um sinal claro de que WebXR (e portanto, AR) não é suportado.
-            if (!navigator.xr) {
-                // Se não for compatível, simplesmente mostra o modal e não faz mais nada.
-                console.log("WebXR não suportado. Mostrando modal de erro.");
-                document.getElementById('ar-compatibility-modal').style.display = 'flex';
-                return; // Encerra a função aqui.
-            }
-            
-            // PASSO 2: Se a verificação passar, continua com a lógica original
-            const modelViewer = document.getElementById('boneco');
-            const arButton = event.target;
-            const originalButtonText = arButton.innerHTML;
+        const modelViewer = document.getElementById('boneco');
+        const arButton = document.getElementById('custom-ar-button');
+        const arError = document.getElementById('ar-error-placeholder');
 
+        // Espera o componente estar pronto
+        modelViewer.addEventListener('load', () => {
+            // Pergunta diretamente se a AR pode ser ativada
+            if (modelViewer.canActivateAR) {
+                // Se sim, mostra nosso botão personalizado
+                arButton.style.display = 'block';
+            } else {
+                // Se não, mostra nossa mensagem de erro personalizada
+                arError.style.display = 'block';
+            }
+        });
+
+        // Lógica para o clique no nosso botão personalizado
+        arButton.addEventListener('click', (event) => {
+            const originalButtonText = arButton.textContent;
             const resetButton = () => {
-                arButton.innerHTML = originalButtonText;
+                arButton.textContent = originalButtonText;
                 arButton.disabled = false;
             };
 
-            arButton.innerHTML = 'Abrindo AR...';
+            arButton.textContent = 'Abrindo AR...';
             arButton.disabled = true;
 
-            // O .catch() agora atuará como uma segunda camada de segurança para outros erros.
+            // Ativa a AR programaticamente
             modelViewer.activateAR().catch((error) => {
-                console.error("Falha ao iniciar a sessão de AR:", error);
+                console.error("Erro inesperado ao ativar AR:", error);
                 resetButton();
-                document.getElementById('ar-compatibility-modal').style.display = 'flex';
             });
             
             modelViewer.addEventListener('ar-session-ended', resetButton, { once: true });
-        }
+        });
     </script>
 </body>
 </html>
