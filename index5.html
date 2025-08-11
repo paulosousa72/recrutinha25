@@ -6,37 +6,65 @@
     <title>Visualizador de Boneco em AR</title>
     <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
     <style>
-        /* ... Seus estilos CSS permanecem os mesmos ... */
-        body { font-family: sans-serif; margin: 0; }
-        model-viewer { width: 100%; height: 400px; }
-        h1 { text-align: center; padding: 10px 20px; }
-        h1 img { max-height: 80px; width: auto; max-width: 100%; vertical-align: middle; }
-        hr { display: block; border: none; border-top: 2px solid olive; margin: 20px 0; }
-        body::before { content: ""; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-image: url('background.jpg'); background-size: cover; background-position: center; opacity: 0.2; z-index: -1; }
-        button { display: block; margin: 20px auto; padding: 10px 20px; font-size: 16px; background-color: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer; transition: background-color 0.2s, transform 0.1s; }
-        button:hover { background-color: #45a049; }
-        button:active { background-color: #3e8e41; transform: translateY(2px); }
-        button:disabled { background-color: #555; cursor: wait; }
-
-        .ar-message {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            background-color: #fff;
-            margin: 20px auto;
-            padding: 20px;
-            border-radius: 10px;
-            text-align: center;
+        model-viewer {
             width: 90%;
-            max-width: 320px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            height: 200px;
         }
-        .ar-message p { font-size: 16px; line-height: 1.4; color: #333; margin: 0; }
+        h1 {
+            text-align: center;
+            padding: 10px 20px;
+        }
+        h1 img {
+            max-height: 80px;
+            width: auto;
+            max-width: 100%;
+            vertical-align: middle;
+        }
+        hr {
+            display: block;
+            border: none;
+            border-top: 2px solid olive;
+            margin: 20px 0;
+        }
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url('background.jpg');
+            background-size: cover;
+            background-position: center;
+            opacity: 0.2;
+            z-index: -1;
+        }
+        button {
+            display: block;
+            margin: 20px auto;
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .mensagem-pc {
+            text-align: center;
+            color: #b22222;
+            font-weight: bold;
+            margin: 20px;
+            font-size: 16px;
+        }
     </style>
 </head>
 <body>
     <h1>
-        <img src="logorecrutinha.png" alt="Logo Recrutinha">
+        <img src="logorecrutinha.png">
     </h1>
     <hr>
     <model-viewer
@@ -47,97 +75,24 @@
         ar-placement="floor"
         scale="0.7 0.7 0.7"
         camera-controls
-        disable-zoom
-        alt="Modelo 3D do Recrutinha">
+        disable-zoom>
     </model-viewer>
-    
-    <div id="ar-ui-container">
-        <!-- O botão ou a mensagem de erro será inserido aqui -->
-    </div>
+
+    <div id="acao"></div>
 
     <script>
-        (async function() {
-            const arContainer = document.getElementById('ar-ui-container');
-            
-            // PASSO 1: Função para detectar se é um dispositivo móvel
-            function isMobile() {
-                const mobiles = [/Android/i, /webOS/i, /iPhone/i, /iPad/i, /iPod/i, /BlackBerry/i, /Windows Phone/i];
-                return mobiles.some((mobile) => {
-                    return navigator.userAgent.match(mobile);
-                });
-            }
+        function isMobileDevice() {
+            return /android|iphone|ipad|ipod|windows phone/i.test(navigator.userAgent);
+        }
 
-            // PASSO 2: Lógica de verificação atualizada
-            if (navigator.xr) {
-                try {
-                    const supported = await navigator.xr.isSessionSupported('immersive-ar');
-                    if (supported) {
-                        // Se AR é suportado, cria o botão (funciona apenas em celulares compatíveis)
-                        arContainer.innerHTML = '<button onclick="startAR(event)">VER NO SEU ESPAÇO</button>';
-                    } else {
-                        // Se AR não é suportado, verifica se é um desktop ou um celular incompatível
-                        if (isMobile()) {
-                            // É um celular, mas não suporta AR
-                            arContainer.innerHTML = `
-                                <div class="ar-message">
-                                    <p>Seu celular não é compatível com Realidade Aumentada.</p>
-                                </div>
-                            `;
-                        } else {
-                            // Não é um celular, é um desktop
-                             arContainer.innerHTML = `
-                                <div class="ar-message">
-                                    <p>Para ver o Recrutinha no seu espaço, use um celular.</p>
-                                </div>
-                            `;
-                        }
-                    }
-                } catch (e) {
-                    // Erro na verificação, assume que é um desktop para dar uma mensagem útil
-                    console.error("Erro ao verificar suporte a AR:", e);
-                    arContainer.innerHTML = `
-                        <div class="ar-message">
-                            <p>Para ver o Recrutinha no seu espaço, use um celular.</p>
-                        </div>
-                    `;
-                }
-            } else {
-                // Se a API WebXR nem existir, é um desktop ou um celular muito antigo
-                if (isMobile()) {
-                    // Celular antigo/incompatível
-                    arContainer.innerHTML = `
-                        <div class="ar-message">
-                            <p>Seu celular não é compatível com Realidade Aumentada.</p>
-                        </div>
-                    `;
-                } else {
-                    // Desktop
-                    arContainer.innerHTML = `
-                        <div class="ar-message">
-                            <p>Para ver o Recrutinha no seu espaço, use um celular.</p>
-                        </div>
-                    `;
-                }
-            }
-        })();
+        const acaoContainer = document.getElementById('acao');
 
-        // A função startAR permanece a mesma
-        function startAR(event) {
-            const modelViewer = document.getElementById('boneco');
-            const arButton = event.target;
-            const originalButtonText = arButton.innerHTML;
-            const resetButton = () => {
-                arButton.innerHTML = originalButtonText;
-                arButton.disabled = false;
-            };
-            arButton.innerHTML = 'Abrindo AR...';
-            arButton.disabled = true;
-            modelViewer.activateAR().catch((error) => {
-                console.error("Falha ao iniciar a sessão de AR:", error);
-                resetButton();
-                alert("Ocorreu um erro ao tentar iniciar a Realidade Aumentada.");
-            });
-            modelViewer.addEventListener('ar-session-ended', resetButton, { once: true });
+        if (isMobileDevice()) {
+            // Exibe o botão para dispositivos móveis
+            acaoContainer.innerHTML = `<button onclick="document.getElementById('boneco').activateAR()">VER NO SEU ESPAÇO</button>`;
+        } else {
+            // Exibe a mensagem para computadores
+            acaoContainer.innerHTML = `<p class="mensagem-pc">Para ver o Recrutinha no seu ambiente, acesse a partir de um celular ou tablet.</p>`;
         }
     </script>
 </body>
