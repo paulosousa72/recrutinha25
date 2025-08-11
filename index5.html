@@ -9,8 +9,6 @@
         model-viewer {
             width: 90%;
             height: 200px;
-            display: block;
-            margin: 0 auto;
         }
         h1 {
             text-align: center;
@@ -55,17 +53,131 @@
         button:hover {
             background-color: #45a049;
         }
-        .mensagem-pc {
+        #debug {
+            color: red;
             text-align: center;
-            color: #b22222;
-            font-weight: bold;
-            margin: 20px auto;
+            margin-top: 10px;
+        }
+        /* Estilos para o modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            max-width: 80%;
+            max-height: 80%;
+            overflow: auto;
+        }
+        .modal-content img {
+            max-width: 100px;
+            margin-bottom: 10px;
+        }
+        .modal-content p {
             font-size: 16px;
-            max-width: 90%;
+            margin-bottom: 20px;
+        }
+        .modal-content button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .modal-content button:hover {
+            background-color: #45a049;
         }
     </style>
 </head>
 <body>
+    <script>
+        const userAgent = navigator.userAgent.toLowerCase();
+        const isChrome = /chrome|crios/.test(userAgent) && !/edge|opr\//.test(userAgent);
+        const isSafari = /safari/.test(userAgent) && !/chrome|crios/.test(userAgent);
+        const isOpera = /opr\/|opera/.test(userAgent) && !/operagx/.test(userAgent);
+        const isOperaGX = /operagx/.test(userAgent);
+
+        if (!isChrome && !isSafari && !isOpera || isOperaGX) {
+            document.body.innerHTML += 
+                <style>
+                    .modal {
+                        position: fixed;
+                        top: 0;
+                        left: 0;
+                        width: 100vw;
+                        height: 100vh;
+                        background: rgba(0, 0, 0, 0.5);
+                        display: flex;
+                        justify-content: center;
+                        align-items: center;
+                        z-index: 9999;
+                    }
+                    .modal-content {
+                        background: white;
+                        padding: 15px;
+                        border-radius: 10px;
+                        width: 80%;
+                        max-width: 300px;
+                        text-align: center;
+                        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+                    }
+                    .modal-content img {
+                        width: 100px;
+                        height: auto;
+                        margin-bottom: 10px;
+                    }
+                    .modal-content p {
+                        font-size: 14px;
+                        margin-bottom: 15px;
+                    }
+                    .modal-buttons {
+                        display: flex;
+                        gap: 8px;
+                        justify-content: center;
+                        flex-wrap: wrap;
+                    }
+                    .modal-buttons button {
+                        flex: 1;
+                        padding: 8px;
+                        font-size: 13px;
+                        border: none;
+                        background-color: #1976d2;
+                        color: white;
+                        border-radius: 5px;
+                        cursor: pointer;
+                        transition: background 0.2s;
+                    }
+                    .modal-buttons button:hover {
+                        background-color: #125a9c;
+                    }
+                </style>
+
+                <div class="modal">
+                    <div class="modal-content">
+                        <img src="recrutinha.png" alt="Recrutinha">
+                        <p>Amiguinhos, o seu navegador não suporta arquivos 3D.<br>Para ver o Recrutinha em sua casa, instale um dos navegadores abaixo:</p>
+                        <div class="modal-buttons">
+                            <button onclick="window.location.href='https://www.google.com/chrome/'">Chrome</button>
+                            <button onclick="window.location.href='https://www.apple.com/safari/'">Safari</button>
+                            <button onclick="window.location.href='https://www.opera.com/'">Opera</button>
+                        </div>
+                    </div>
+                </div>
+            ;
+        }
+    </script>
     <h1>
         <img src="logorecrutinha.png">
     </h1>
@@ -80,22 +192,6 @@
         camera-controls
         disable-zoom>
     </model-viewer>
-
-    <!-- Aqui substituímos o botão ou mensagem -->
-    <div id="acao"></div>
-
-    <script>
-        function isMobileDevice() {
-            return /android|iphone|ipad|ipod|windows phone/i.test(navigator.userAgent);
-        }
-
-        if (isMobileDevice()) {
-            document.getElementById('acao').innerHTML =
-                `<button onclick="document.getElementById('boneco').activateAR()">VER NO SEU ESPAÇO</button>`;
-        } else {
-            document.getElementById('acao').innerHTML =
-                `<p class="mensagem-pc">Para ver o Recrutinha no seu ambiente, acesse a partir de um celular ou tablet1.</p>`;
-        }
-    </script>
+    <button onclick="document.getElementById('boneco').activateAR()">VER NO SEU ESPAÇO</button>
 </body>
 </html>
