@@ -1,220 +1,124 @@
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Noticiário do Exército</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-<script type="importmap">
-{
-  "imports": {
-    "react": "https://aistudiocdn.com/react@^19.2.0",
-    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
-    "react/": "https://aistudiocdn.com/react@^19.2.0/"
-  }
-}
-</script>
+    <title>Noticiário do Exército - RSS Feed Clone</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f9f9f9;
+            color: #333;
+        }
+        h1 {
+            color: #006400; /* Verde escuro para tema militar */
+        }
+        .feed-item {
+            border-bottom: 1px solid #ccc;
+            padding: 10px 0;
+        }
+        .feed-item h2 {
+            margin: 0;
+            font-size: 18px;
+        }
+        .feed-item h2 a {
+            color: #0000cd;
+            text-decoration: none;
+        }
+        .feed-item h2 a:hover {
+            text-decoration: underline;
+        }
+        .feed-item .date {
+            font-size: 12px;
+            color: #666;
+        }
+        .feed-item .description {
+            margin-top: 5px;
+            font-size: 14px;
+        }
+        #feed-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        #feed-title {
+            text-align: center;
+        }
+        #feed-description {
+            text-align: center;
+            font-style: italic;
+        }
+    </style>
 </head>
-<body class="bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-300">
-
-    <main class="container mx-auto p-4 md:p-8">
-        <!-- Header: Title, description, and last updated time will be injected here -->
-        <header id="feed-header" class="mb-8 p-6 bg-white dark:bg-gray-800 rounded-lg shadow-md border-l-4 border-green-600">
-            <h1 id="feed-title" class="text-4xl font-extrabold text-gray-800 dark:text-white mb-2">Carregando Feed...</h1>
-            <p id="feed-description" class="text-lg text-gray-600 dark:text-gray-300"></p>
-            <p id="last-updated" class="text-sm text-gray-500 dark:text-gray-400 mt-4" style="display: none;"></p>
-        </header>
-
-        <!-- Content: Loading spinner, error message, or feed items will be rendered here -->
-        <div id="feed-content">
-            <!-- Initial Loading Spinner State -->
-            <div class="flex flex-col items-center justify-center space-y-2 h-64">
-                <div class="w-12 h-12 rounded-full animate-spin border-4 border-solid border-green-500 border-t-transparent" role="status" aria-label="loading"></div>
-                <span class="text-gray-600 dark:text-gray-300">Carregando notícias...</span>
-            </div>
-        </div>
-    </main>
+<body>
+    <div id="feed-container">
+        <h1 id="feed-title">Carregando...</h1>
+        <p id="feed-description"></p>
+        <div id="feed-items"></div>
+    </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            // --- Configuration ---
-            const RSS_FEED_URL = 'https://www.eb.mil.br/noticiario-do-exercito/-/journal/rss/42281/191708/rss.xml?sort=displayDate-';
-            const CORS_PROXY = 'https://api.allorigins.win/raw?url=';
-            const REFRESH_INTERVAL = 30 * 60 * 1000; // 30 minutes
+        const rssUrl = 'https://www.eb.mil.br/noticiario-do-exercito/-/journal/rss/42281/191708/rss.xml?sort=displayDate-';
 
-            // --- DOM Element References ---
-            const feedTitle = document.getElementById('feed-title');
-            const feedDescription = document.getElementById('feed-description');
-            const lastUpdatedEl = document.getElementById('last-updated');
-            const feedContent = document.getElementById('feed-content');
-
-            // --- State ---
-            let latestGuid = null;
-
-            // --- Helper Functions ---
-
-            /**
-             * Safely gets the text content from a child element of a given XML node.
-             * @param {Element} element The parent XML element.
-             * @param {string} tagName The tag name of the child element.
-             * @returns {string} The text content.
-             */
-            const getTextContent = (element, tagName) => {
-                const node = element.querySelector(tagName);
-                return node?.textContent?.trim() || '';
-            };
-
-            /**
-             * Formats a date string into a full Brazilian Portuguese date and time.
-             * @param {string} dateString The date string to format.
-             * @returns {string} The formatted date string.
-             */
-            const formatDate = (dateString) => {
-                try {
-                    return new Intl.DateTimeFormat('pt-BR', {
-                        dateStyle: 'full',
-                        timeStyle: 'short',
-                    }).format(new Date(dateString));
-                } catch (e) {
-                    return dateString;
-                }
-            };
-
-            // --- Core Logic ---
-
-            /**
-             * Fetches the RSS feed from the URL and parses it into a JavaScript object.
-             * @param {string} url The URL of the RSS feed.
-             * @returns {Promise<object>} A promise that resolves to the parsed feed object.
-             */
-            const fetchAndParseRss = async (url) => {
-                const fullUrl = `${CORS_PROXY}${encodeURIComponent(url)}`;
-                const response = await fetch(fullUrl);
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
+        async function fetchRSS() {
+            try {
+                // Note: If CORS issues occur, consider using a proxy like https://cors-anywhere.herokuapp.com/ or similar.
+                const response = await fetch(rssUrl);
                 const xmlText = await response.text();
                 const parser = new DOMParser();
-                const xmlDoc = parser.parseFromString(xmlText, 'application/xml');
+                const xmlDoc = parser.parseFromString(xmlText, 'text/xml');
 
-                if (xmlDoc.querySelector('parsererror')) {
-                    throw new Error('Failed to parse XML from the feed.');
-                }
                 const channel = xmlDoc.querySelector('channel');
-                if (!channel) {
-                    throw new Error('Invalid RSS feed structure: <channel> tag not found.');
-                }
+                const feedTitle = channel.querySelector('title').textContent;
+                const feedDescription = channel.querySelector('description').textContent;
 
-                const items = Array.from(channel.querySelectorAll('item')).map(item => ({
-                    title: getTextContent(item, 'title'),
-                    link: getTextContent(item, 'link'),
-                    description: getTextContent(item, 'description'),
-                    pubDate: getTextContent(item, 'pubDate'),
-                    guid: getTextContent(item, 'guid'),
-                }));
+                document.getElementById('feed-title').textContent = feedTitle;
+                document.getElementById('feed-description').textContent = feedDescription;
 
-                return {
-                    title: getTextContent(channel, 'title'),
-                    description: getTextContent(channel, 'description'),
-                    items,
-                };
-            };
-            
-            // --- Rendering Functions ---
+                const itemsContainer = document.getElementById('feed-items');
+                itemsContainer.innerHTML = ''; // Clear previous items
 
-            const renderLoading = () => {
-                feedContent.innerHTML = `
-                    <div class="flex flex-col items-center justify-center space-y-2 h-64">
-                        <div class="w-12 h-12 rounded-full animate-spin border-4 border-solid border-green-500 border-t-transparent" role="status" aria-label="loading"></div>
-                        <span class="text-gray-600 dark:text-gray-300">Carregando notícias...</span>
-                    </div>`;
-            };
+                const items = xmlDoc.querySelectorAll('item');
+                items.forEach(item => {
+                    const title = item.querySelector('title').textContent;
+                    const link = item.querySelector('link').textContent;
+                    const description = item.querySelector('description').textContent;
+                    const pubDate = item.querySelector('pubDate').textContent;
 
-            const renderError = (error) => {
-                feedContent.innerHTML = `
-                    <div class="text-center text-red-500 bg-red-100 dark:bg-red-900 dark:text-red-200 p-4 rounded-lg">
-                        <p class="font-bold">Falha ao carregar o feed:</p>
-                        <p>${error.message}</p>
-                    </div>`;
-            };
+                    const itemDiv = document.createElement('div');
+                    itemDiv.classList.add('feed-item');
 
-            const renderFeed = (feed) => {
-                feedTitle.textContent = feed.title;
-                feedDescription.textContent = feed.description;
+                    const titleH2 = document.createElement('h2');
+                    const titleLink = document.createElement('a');
+                    titleLink.href = link;
+                    titleLink.textContent = title;
+                    titleH2.appendChild(titleLink);
 
-                if (!feed.items || feed.items.length === 0) {
-                    feedContent.innerHTML = `<div class="text-center text-gray-500 dark:text-gray-400"><p>Nenhum item encontrado no feed.</p></div>`;
-                    return;
-                }
+                    const dateP = document.createElement('p');
+                    dateP.classList.add('date');
+                    dateP.textContent = new Date(pubDate).toLocaleString();
 
-                const itemsHtml = feed.items.map(item => `
-                    <article class="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden transform hover:-translate-y-1 transition-all duration-300 ease-in-out">
-                        <div class="p-6">
-                            <p class="text-sm text-gray-500 dark:text-gray-400 mb-2">${formatDate(item.pubDate)}</p>
-                            <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-4">
-                                <a href="${item.link}" target="_blank" rel="noopener noreferrer" class="hover:text-green-600 dark:hover:text-green-400 transition-colors duration-200">
-                                    ${item.title}
-                                </a>
-                            </h2>
-                            <div class="prose prose-sm lg:prose-base dark:prose-invert max-w-none text-gray-600 dark:text-gray-300">
-                                ${item.description}
-                            </div>
-                        </div>
-                        <div class="bg-gray-50 dark:bg-gray-700 p-4">
-                            <a href="${item.link}" target="_blank" rel="noopener noreferrer" class="text-green-700 dark:text-green-400 font-semibold hover:underline">
-                                Leia mais &rarr;
-                            </a>
-                        </div>
-                    </article>
-                `).join('');
-                
-                feedContent.innerHTML = `<div class="space-y-6">${itemsHtml}</div>`;
-            };
+                    const descP = document.createElement('p');
+                    descP.classList.add('description');
+                    descP.innerHTML = description; // Use innerHTML to render any HTML in description
 
-            const updateLastUpdatedTimestamp = () => {
-                const now = new Date();
-                lastUpdatedEl.textContent = `Última atualização: ${now.toLocaleTimeString('pt-BR')}`;
-                lastUpdatedEl.style.display = 'block';
-            };
+                    itemDiv.appendChild(titleH2);
+                    itemDiv.appendChild(dateP);
+                    itemDiv.appendChild(descP);
 
-            /**
-             * Main function to load the feed, check for updates, and render the UI.
-             * @param {boolean} isInitialLoad - True if it's the first time the page is loading.
-             */
-            const loadFeed = async (isInitialLoad = false) => {
-                if (isInitialLoad) {
-                    renderLoading();
-                }
-                try {
-                    const feed = await fetchAndParseRss(RSS_FEED_URL);
-                    const newGuid = feed.items.length > 0 ? feed.items[0].guid : null;
+                    itemsContainer.appendChild(itemDiv);
+                });
+            } catch (error) {
+                console.error('Error fetching RSS:', error);
+                document.getElementById('feed-title').textContent = 'Erro ao carregar o feed';
+            }
+        }
 
-                    // Only re-render if the latest item is different
-                    if (newGuid !== latestGuid) {
-                        console.log('Feed has been updated. Rendering new content.');
-                        latestGuid = newGuid;
-                        renderFeed(feed);
-                        updateLastUpdatedTimestamp();
-                    } else {
-                        console.log('No new content found. Skipping re-render.');
-                        // Still update timestamp to show a check was performed
-                         if (!isInitialLoad) {
-                             updateLastUpdatedTimestamp();
-                         }
-                    }
-                } catch (error) {
-                    console.error('Error during feed load:', error);
-                    // Only show error on the main page during the initial load
-                    if (isInitialLoad) {
-                        renderError(error);
-                    }
-                }
-            };
+        // Fetch initially
+        fetchRSS();
 
-            // --- Initialization ---
-            loadFeed(true);
-            setInterval(() => loadFeed(false), REFRESH_INTERVAL);
-        });
+        // Fetch every 60 minutes (3600000 ms)
+        setInterval(fetchRSS, 3600000);
     </script>
-
 </body>
 </html>
