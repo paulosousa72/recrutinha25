@@ -1,204 +1,220 @@
-<!DOCTYPE html>
-<html lang="pt">
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Visualizador de Boneco em AR</title>
-    <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
-    <style>
-        model-viewer {
-            width: 90%;
-            height: 400px;
-        }
-        h1 {
-            text-align: center;
-            padding: 10px 20px;
-        }
-        h1 img {
-            max-height: 80px;
-            width: auto;
-            max-width: 100%;
-            vertical-align: middle;
-        }
-        hr {
-            display: block;
-            border: none;
-            border-top: 2px solid olive;
-            margin: 20px 0;
-        }
-        body::before {
-            content: "";
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-image: url('background.jpg');
-            background-size: cover;
-            background-position: center;
-            opacity: 0.2;
-            z-index: -1;
-        }
-        button {
-            display: block;
-            margin: 20px auto;
-            padding: 10px 20px;
-            font-size: 16px;
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            /* MELHORIA 1: Adiciona transição suave para as mudanças de estado */
-            transition: background-color 0.2s, transform 0.1s;
-        }
-        button:hover {
-            background-color: #45a049;
-        }
-        /* MELHORIA 2: Estilo para quando o botão está sendo pressionado */
-        button:active {
-            background-color: #3e8e41;
-            transform: translateY(2px);
-        }
-        #debug {
-            color: red;
-            text-align: center;
-            margin-top: 10px;
-        }
-        /* Estilos para o modal (sem alterações aqui) */
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.5);
-            z-index: 1000;
-            justify-content: center;
-            align-items: center;
-        }
-        .modal-content {
-            background-color: white;
-            padding: 20px;
-            border-radius: 10px;
-            text-align: center;
-            max-width: 80%;
-            max-height: 80%;
-            overflow: auto;
-        }
-        .modal-content img {
-            max-width: 100px;
-            margin-bottom: 10px;
-        }
-        .modal-content p {
-            font-size: 16px;
-            margin-bottom: 20px;
-        }
-        .modal-content button {
-            background-color: #4CAF50;
-            color: white;
-            padding: 10px 20px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-        .modal-content button:hover {
-            background-color: #45a049;
-        }
-    </style>
+    <title>Noticiário do Exército</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+<script type="importmap">
+{
+  "imports": {
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "react/": "https://aistudiocdn.com/react@^19.2.0/"
+  }
+}
+</script>
 </head>
-<body>
+<body class="bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-300">
+
+    <main class="container mx-auto p-4 md:p-8">
+        <!-- Header: Title, description, and last updated time will be injected here -->
+        <header id="feed-header" class="mb-8 p-6 bg-white dark:bg-gray-800 rounded-lg shadow-md border-l-4 border-green-600">
+            <h1 id="feed-title" class="text-4xl font-extrabold text-gray-800 dark:text-white mb-2">Carregando Feed...</h1>
+            <p id="feed-description" class="text-lg text-gray-600 dark:text-gray-300"></p>
+            <p id="last-updated" class="text-sm text-gray-500 dark:text-gray-400 mt-4" style="display: none;"></p>
+        </header>
+
+        <!-- Content: Loading spinner, error message, or feed items will be rendered here -->
+        <div id="feed-content">
+            <!-- Initial Loading Spinner State -->
+            <div class="flex flex-col items-center justify-center space-y-2 h-64">
+                <div class="w-12 h-12 rounded-full animate-spin border-4 border-solid border-green-500 border-t-transparent" role="status" aria-label="loading"></div>
+                <span class="text-gray-600 dark:text-gray-300">Carregando notícias...</span>
+            </div>
+        </div>
+    </main>
+
     <script>
-        const userAgent = navigator.userAgent.toLowerCase();
-        const isChrome = /chrome|crios/.test(userAgent) && !/edge|opr\//.test(userAgent);
-        const isSafari = /safari/.test(userAgent) && !/chrome|crios/.test(userAgent);
-        const isOpera = /opr\/|opera/.test(userAgent) && !/operagx/.test(userAgent);
-        const isOperaGX = /operagx/.test(userAgent);
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- Configuration ---
+            const RSS_FEED_URL = 'https://www.eb.mil.br/noticiario-do-exercito/-/journal/rss/42281/191708/rss.xml?sort=displayDate-';
+            const CORS_PROXY = 'https://api.allorigins.win/raw?url=';
+            const REFRESH_INTERVAL = 30 * 60 * 1000; // 30 minutes
 
-        if (!isChrome && !isSafari && !isOpera || isOperaGX) {
-            document.body.innerHTML += `
-                <style>
-                    .modal {
-                        position: fixed;
-                        top: 0;
-                        left: 0;
-                        width: 100vw;
-                        height: 100vh;
-                        background: rgba(0, 0, 0, 0.5);
-                        display: flex;
-                        justify-content: center;
-                        align-items: center;
-                        z-index: 9999;
-                    }
-                    .modal-content {
-                        background: white;
-                        padding: 15px;
-                        border-radius: 10px;
-                        width: 80%;
-                        max-width: 300px;
-                        text-align: center;
-                        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-                    }
-                    .modal-content img {
-                        width: 100px;
-                        height: auto;
-                        margin-bottom: 10px;
-                    }
-                    .modal-content p {
-                        font-size: 14px;
-                        margin-bottom: 15px;
-                    }
-                    .modal-buttons {
-                        display: flex;
-                        gap: 8px;
-                        justify-content: center;
-                        flex-wrap: wrap;
-                    }
-                    .modal-buttons button {
-                        flex: 1;
-                        padding: 8px;
-                        font-size: 13px;
-                        border: none;
-                        background-color: #1976d2;
-                        color: white;
-                        border-radius: 5px;
-                        cursor: pointer;
-                        transition: background 0.2s;
-                    }
-                    .modal-buttons button:hover {
-                        background-color: #125a9c;
-                    }
-                </style>
+            // --- DOM Element References ---
+            const feedTitle = document.getElementById('feed-title');
+            const feedDescription = document.getElementById('feed-description');
+            const lastUpdatedEl = document.getElementById('last-updated');
+            const feedContent = document.getElementById('feed-content');
 
-                <div class="modal">
-                    <div class="modal-content">
-                        <img src="recrutinha.png" alt="Recrutinha">
-                        <p>Amiguinhos, o seu navegador não suporta arquivos 3D.<br>Para ver o Recrutinha em sua casa, instale um dos navegadores abaixo:</p>
-                        <div class="modal-buttons">
-                            <button onclick="window.location.href='https://www.google.com/chrome/'">Chrome</button>
-                            <button onclick="window.location.href='https://www.apple.com/safari/'">Safari</button>
-                            <button onclick="window.location.href='https://www.opera.com/'">Opera</button>
+            // --- State ---
+            let latestGuid = null;
+
+            // --- Helper Functions ---
+
+            /**
+             * Safely gets the text content from a child element of a given XML node.
+             * @param {Element} element The parent XML element.
+             * @param {string} tagName The tag name of the child element.
+             * @returns {string} The text content.
+             */
+            const getTextContent = (element, tagName) => {
+                const node = element.querySelector(tagName);
+                return node?.textContent?.trim() || '';
+            };
+
+            /**
+             * Formats a date string into a full Brazilian Portuguese date and time.
+             * @param {string} dateString The date string to format.
+             * @returns {string} The formatted date string.
+             */
+            const formatDate = (dateString) => {
+                try {
+                    return new Intl.DateTimeFormat('pt-BR', {
+                        dateStyle: 'full',
+                        timeStyle: 'short',
+                    }).format(new Date(dateString));
+                } catch (e) {
+                    return dateString;
+                }
+            };
+
+            // --- Core Logic ---
+
+            /**
+             * Fetches the RSS feed from the URL and parses it into a JavaScript object.
+             * @param {string} url The URL of the RSS feed.
+             * @returns {Promise<object>} A promise that resolves to the parsed feed object.
+             */
+            const fetchAndParseRss = async (url) => {
+                const fullUrl = `${CORS_PROXY}${encodeURIComponent(url)}`;
+                const response = await fetch(fullUrl);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const xmlText = await response.text();
+                const parser = new DOMParser();
+                const xmlDoc = parser.parseFromString(xmlText, 'application/xml');
+
+                if (xmlDoc.querySelector('parsererror')) {
+                    throw new Error('Failed to parse XML from the feed.');
+                }
+                const channel = xmlDoc.querySelector('channel');
+                if (!channel) {
+                    throw new Error('Invalid RSS feed structure: <channel> tag not found.');
+                }
+
+                const items = Array.from(channel.querySelectorAll('item')).map(item => ({
+                    title: getTextContent(item, 'title'),
+                    link: getTextContent(item, 'link'),
+                    description: getTextContent(item, 'description'),
+                    pubDate: getTextContent(item, 'pubDate'),
+                    guid: getTextContent(item, 'guid'),
+                }));
+
+                return {
+                    title: getTextContent(channel, 'title'),
+                    description: getTextContent(channel, 'description'),
+                    items,
+                };
+            };
+            
+            // --- Rendering Functions ---
+
+            const renderLoading = () => {
+                feedContent.innerHTML = `
+                    <div class="flex flex-col items-center justify-center space-y-2 h-64">
+                        <div class="w-12 h-12 rounded-full animate-spin border-4 border-solid border-green-500 border-t-transparent" role="status" aria-label="loading"></div>
+                        <span class="text-gray-600 dark:text-gray-300">Carregando notícias...</span>
+                    </div>`;
+            };
+
+            const renderError = (error) => {
+                feedContent.innerHTML = `
+                    <div class="text-center text-red-500 bg-red-100 dark:bg-red-900 dark:text-red-200 p-4 rounded-lg">
+                        <p class="font-bold">Falha ao carregar o feed:</p>
+                        <p>${error.message}</p>
+                    </div>`;
+            };
+
+            const renderFeed = (feed) => {
+                feedTitle.textContent = feed.title;
+                feedDescription.textContent = feed.description;
+
+                if (!feed.items || feed.items.length === 0) {
+                    feedContent.innerHTML = `<div class="text-center text-gray-500 dark:text-gray-400"><p>Nenhum item encontrado no feed.</p></div>`;
+                    return;
+                }
+
+                const itemsHtml = feed.items.map(item => `
+                    <article class="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden transform hover:-translate-y-1 transition-all duration-300 ease-in-out">
+                        <div class="p-6">
+                            <p class="text-sm text-gray-500 dark:text-gray-400 mb-2">${formatDate(item.pubDate)}</p>
+                            <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-4">
+                                <a href="${item.link}" target="_blank" rel="noopener noreferrer" class="hover:text-green-600 dark:hover:text-green-400 transition-colors duration-200">
+                                    ${item.title}
+                                </a>
+                            </h2>
+                            <div class="prose prose-sm lg:prose-base dark:prose-invert max-w-none text-gray-600 dark:text-gray-300">
+                                ${item.description}
+                            </div>
                         </div>
-                    </div>
-                </div>
-            `;
-        }
+                        <div class="bg-gray-50 dark:bg-gray-700 p-4">
+                            <a href="${item.link}" target="_blank" rel="noopener noreferrer" class="text-green-700 dark:text-green-400 font-semibold hover:underline">
+                                Leia mais &rarr;
+                            </a>
+                        </div>
+                    </article>
+                `).join('');
+                
+                feedContent.innerHTML = `<div class="space-y-6">${itemsHtml}</div>`;
+            };
+
+            const updateLastUpdatedTimestamp = () => {
+                const now = new Date();
+                lastUpdatedEl.textContent = `Última atualização: ${now.toLocaleTimeString('pt-BR')}`;
+                lastUpdatedEl.style.display = 'block';
+            };
+
+            /**
+             * Main function to load the feed, check for updates, and render the UI.
+             * @param {boolean} isInitialLoad - True if it's the first time the page is loading.
+             */
+            const loadFeed = async (isInitialLoad = false) => {
+                if (isInitialLoad) {
+                    renderLoading();
+                }
+                try {
+                    const feed = await fetchAndParseRss(RSS_FEED_URL);
+                    const newGuid = feed.items.length > 0 ? feed.items[0].guid : null;
+
+                    // Only re-render if the latest item is different
+                    if (newGuid !== latestGuid) {
+                        console.log('Feed has been updated. Rendering new content.');
+                        latestGuid = newGuid;
+                        renderFeed(feed);
+                        updateLastUpdatedTimestamp();
+                    } else {
+                        console.log('No new content found. Skipping re-render.');
+                        // Still update timestamp to show a check was performed
+                         if (!isInitialLoad) {
+                             updateLastUpdatedTimestamp();
+                         }
+                    }
+                } catch (error) {
+                    console.error('Error during feed load:', error);
+                    // Only show error on the main page during the initial load
+                    if (isInitialLoad) {
+                        renderError(error);
+                    }
+                }
+            };
+
+            // --- Initialization ---
+            loadFeed(true);
+            setInterval(() => loadFeed(false), REFRESH_INTERVAL);
+        });
     </script>
-    <h1>
-        <img src="logorecrutinha.png">
-    </h1>
-    <hr>
-    <model-viewer
-        id="boneco"
-        src="RecrutinhaLoW23Jun2.glb"
-        ar
-        ar-modes="webxr scene-viewer quick-look"
-        ar-placement="floor"
-        scale="0.7 0.7 0.7"
-        camera-controls
-        disable-zoom>
-    </model-viewer>
-    <button onclick="document.getElementById('boneco').activateAR()">VER NO SEU ESPAÇO</button>
+
 </body>
 </html>
